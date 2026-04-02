@@ -14,11 +14,7 @@ function getURL() {
     url = `https://${url}`;
   }
 
-  if (!url.endsWith("/")) {
-    url = `${url}/`;
-  }
-
-  return url;
+  return url.replace(/\/+$/, "");
 }
 
 export default function LoginPage() {
@@ -31,18 +27,20 @@ export default function LoginPage() {
     setLoading(true);
     setMessage(null);
 
-    console.log("REDIRECT URL =", getURL());
+    const redirectTo = getURL();
+
+    console.log("REDIRECT URL =", redirectTo);
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: getURL(),
+        emailRedirectTo: redirectTo,
       },
     });
 
     if (error) {
-      console.error(error);
-      setMessage("Impossible d’envoyer le lien de connexion.");
+      console.error("Supabase auth error:", error);
+      setMessage(`Erreur: ${error.message}`);
     } else {
       setMessage("Lien envoyé. Vérifie ta boîte mail.");
     }
