@@ -11,6 +11,11 @@ type NewsItem = {
   source_url: string | null;
   published_at: string | null;
   category: string | null;
+  main_category: string | null;
+  sub_category: string | null;
+  portee: string | null;
+  sector: string | null;
+  status: string | null;
   document_type: string | null;
   jurisdiction: string | null;
   summary: string | null;
@@ -22,15 +27,14 @@ type NewsItem = {
 
 const FILTERS = [
   "Toutes",
-  "Droit bancaire",
-  "Droit des sociétés",
-  "Droit de la consommation",
   "Droit public des affaires",
   "Régulation et numérique",
-  "Environnement et activités économiques",
   "Réformes et textes",
   "AMF et marchés financiers",
   "Sanctions et conformité",
+  "Droit des sociétés",
+  "Droit des affaires",
+  "Environnement et activités économiques",
 ];
 
 const ITEMS_PER_PAGE = 6;
@@ -107,6 +111,28 @@ function getSourceBadgeClass(source: string | null) {
   return "border-white/15 bg-white/5 text-white/80";
 }
 
+function getPorteeBadgeClass(portee: string | null) {
+  const value = (portee || "").toLowerCase();
+
+  if (value.includes("sanction")) {
+    return "border-rose-400/30 bg-rose-400/10 text-rose-200";
+  }
+  if (value.includes("réforme") || value.includes("reforme")) {
+    return "border-amber-400/30 bg-amber-400/10 text-amber-200";
+  }
+  if (value.includes("encadrement")) {
+    return "border-cyan-400/30 bg-cyan-400/10 text-cyan-200";
+  }
+  if (value.includes("alerte")) {
+    return "border-orange-400/30 bg-orange-400/10 text-orange-200";
+  }
+  if (value.includes("validation") || value.includes("confirmation")) {
+    return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
+  }
+
+  return "border-white/10 bg-white/5 text-white/70";
+}
+
 export default function HomePage() {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,7 +148,7 @@ export default function HomePage() {
       const { data, error } = await supabase
         .from("news_items")
         .select(
-          "id, title, source, source_url, published_at, category, document_type, jurisdiction, summary, apport_title, practical_impact, importance, tags"
+          "id, title, source, source_url, published_at, category, main_category, sub_category, portee, sector, status, document_type, jurisdiction, summary, apport_title, practical_impact, importance, tags"
         )
         .order("published_at", { ascending: false });
 
@@ -163,8 +189,8 @@ export default function HomePage() {
     const q = search.trim().toLowerCase();
 
     return items.filter((item) => {
-      const matchFilter =
-        selectedFilter === "Toutes" || item.category === selectedFilter;
+      const main = item.main_category || item.category;
+      const matchFilter = selectedFilter === "Toutes" || main === selectedFilter;
 
       if (!matchFilter) return false;
 
@@ -174,6 +200,11 @@ export default function HomePage() {
         item.title,
         item.source,
         item.category,
+        item.main_category,
+        item.sub_category,
+        item.portee,
+        item.sector,
+        item.status,
         item.document_type,
         item.jurisdiction,
         item.summary,
@@ -265,13 +296,12 @@ export default function HomePage() {
           <section className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
             <div>
               <h1 className="max-w-5xl text-5xl font-semibold leading-[0.98] tracking-tight text-white md:text-7xl">
-                Actualité juridique, sélectionnée et structurée.
+                Actualité juridique, structurée et qualifiée.
               </h1>
 
               <p className="mt-8 max-w-4xl text-xl leading-[1.8] text-white/72 md:text-2xl">
-                Décisions, avis, communiqués et sanctions en droit privé,
-                droit public des affaires et régulation, avec mise en avant
-                du point clé et de l’apport pratique.
+                Décisions, avis, communiqués et sanctions enrichis avec
+                matière principale, sous-thème, portée et apport pratique.
               </p>
             </div>
 
@@ -304,7 +334,7 @@ export default function HomePage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher un mot-clé, une matière, un thème..."
+            placeholder="Rechercher une notion, un sous-thème, une portée, un secteur..."
             className="w-full bg-transparent px-3 py-3 text-xl text-white outline-none placeholder:text-white/30"
           />
         </section>
@@ -358,91 +388,125 @@ export default function HomePage() {
           </section>
         ) : (
           <section className="mt-10 grid gap-6">
-            {paginatedItems.map((item, index) => (
-              <Link
-                key={item.id}
-                href={`/news/${item.id}`}
-                className="group block rounded-[2rem] border border-white/10 bg-[#07101d]/85 p-7 shadow-[0_10px_40px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#0a1424] md:p-8"
-              >
-                <div className="flex flex-wrap items-center gap-3">
-                  {item.document_type && (
-                    <span
-                      className={`rounded-full border px-4 py-2 text-[11px] font-medium uppercase tracking-wide ${getTypeBadgeClass(
-                        item.document_type
-                      )}`}
-                    >
-                      {item.document_type}
-                    </span>
-                  )}
+            {paginatedItems.map((item, index) => {
+              const mainCategory = item.main_category || item.category;
 
-                  {item.source && (
-                    <span
-                      className={`rounded-full border px-4 py-2 text-[11px] font-medium uppercase tracking-wide ${getSourceBadgeClass(
-                        item.source
-                      )}`}
-                    >
-                      {item.source}
-                    </span>
-                  )}
-
-                  {item.category && (
-                    <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-white/65">
-                      {item.category}
-                    </span>
-                  )}
-
-                  {item.importance === "important" && (
-                    <span className="rounded-full border border-amber-400/25 bg-amber-400/10 px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-amber-200">
-                      Important
-                    </span>
-                  )}
-                </div>
-
-                <div className="mt-6 flex items-start justify-between gap-5">
-                  <h2 className="max-w-5xl text-2xl font-semibold leading-tight text-white transition group-hover:text-white md:text-4xl">
-                    {item.title}
-                  </h2>
-
-                  <span className="hidden shrink-0 text-xs text-white/25 md:block">
-                    #{String((currentPage - 1) * ITEMS_PER_PAGE + index + 1).padStart(2, "0")}
-                  </span>
-                </div>
-
-                {item.published_at && (
-                  <p className="mt-4 text-sm text-white/45 md:text-base">
-                    {formatDate(item.published_at)}
-                  </p>
-                )}
-
-                {item.apport_title && (
-                  <p className="mt-6 text-lg font-medium leading-snug text-cyan-100/95 md:text-xl">
-                    {item.apport_title}
-                  </p>
-                )}
-
-                <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-black/20 p-6">
-                  <p className="text-xs uppercase tracking-[0.28em] text-white/35">
-                    Apport pratique
-                  </p>
-                  <p className="mt-4 text-lg leading-[1.9] text-white/82 md:text-xl">
-                    {getExcerpt(item)}
-                  </p>
-                </div>
-
-                {item.tags && item.tags.length > 0 && (
-                  <div className="mt-6 flex flex-wrap gap-2.5">
-                    {item.tags.slice(0, 4).map((tag) => (
+              return (
+                <Link
+                  key={item.id}
+                  href={`/news/${item.id}`}
+                  className="group block rounded-[2rem] border border-white/10 bg-[#07101d]/85 p-7 shadow-[0_10px_40px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#0a1424] md:p-8"
+                >
+                  <div className="flex flex-wrap items-center gap-3">
+                    {item.document_type && (
                       <span
-                        key={tag}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65"
+                        className={`rounded-full border px-4 py-2 text-[11px] font-medium uppercase tracking-wide ${getTypeBadgeClass(
+                          item.document_type
+                        )}`}
                       >
-                        {tag}
+                        {item.document_type}
                       </span>
-                    ))}
+                    )}
+
+                    {item.source && (
+                      <span
+                        className={`rounded-full border px-4 py-2 text-[11px] font-medium uppercase tracking-wide ${getSourceBadgeClass(
+                          item.source
+                        )}`}
+                      >
+                        {item.source}
+                      </span>
+                    )}
+
+                    {mainCategory && (
+                      <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-white/65">
+                        {mainCategory}
+                      </span>
+                    )}
+
+                    {item.portee && (
+                      <span
+                        className={`rounded-full border px-4 py-2 text-[11px] font-medium uppercase tracking-wide ${getPorteeBadgeClass(
+                          item.portee
+                        )}`}
+                      >
+                        {item.portee}
+                      </span>
+                    )}
+
+                    {item.importance === "important" && (
+                      <span className="rounded-full border border-amber-400/25 bg-amber-400/10 px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-amber-200">
+                        Important
+                      </span>
+                    )}
                   </div>
-                )}
-              </Link>
-            ))}
+
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    {item.sub_category && (
+                      <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs text-cyan-100/90">
+                        {item.sub_category}
+                      </span>
+                    )}
+
+                    {item.sector && (
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65">
+                        Secteur : {item.sector}
+                      </span>
+                    )}
+
+                    {item.status && (
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65">
+                        Statut : {item.status}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-6 flex items-start justify-between gap-5">
+                    <h2 className="max-w-5xl text-2xl font-semibold leading-tight text-white transition group-hover:text-white md:text-4xl">
+                      {item.title}
+                    </h2>
+
+                    <span className="hidden shrink-0 text-xs text-white/25 md:block">
+                      #{String((currentPage - 1) * ITEMS_PER_PAGE + index + 1).padStart(2, "0")}
+                    </span>
+                  </div>
+
+                  {item.published_at && (
+                    <p className="mt-4 text-sm text-white/45 md:text-base">
+                      {formatDate(item.published_at)}
+                    </p>
+                  )}
+
+                  {item.apport_title && (
+                    <p className="mt-6 text-lg font-medium leading-snug text-cyan-100/95 md:text-xl">
+                      {item.apport_title}
+                    </p>
+                  )}
+
+                  <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-black/20 p-6">
+                    <p className="text-xs uppercase tracking-[0.28em] text-white/35">
+                      Apport pratique
+                    </p>
+                    <p className="mt-4 text-lg leading-[1.9] text-white/82 md:text-xl">
+                      {getExcerpt(item)}
+                    </p>
+                  </div>
+
+                  {item.tags && item.tags.length > 0 && (
+                    <div className="mt-6 flex flex-wrap gap-2.5">
+                      {item.tags.slice(0, 4).map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
           </section>
         )}
 
