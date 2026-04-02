@@ -31,6 +31,8 @@ export default function LoginPage() {
     setLoading(true);
     setMessage(null);
 
+    console.log("REDIRECT URL =", getURL());
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
