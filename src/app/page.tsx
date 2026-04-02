@@ -25,14 +25,15 @@ type NewsItem = {
   tags: string[] | null;
 };
 
-const FILTERS = [
-  "Toutes",
+const PREFERRED_FILTER_ORDER = [
   "Droit public des affaires",
   "Régulation et numérique",
   "Réformes et textes",
   "AMF et marchés financiers",
   "Sanctions et conformité",
   "Droit des sociétés",
+  "Droit bancaire",
+  "Droit de la consommation",
   "Droit des affaires",
   "Environnement et activités économiques",
 ];
@@ -133,6 +134,10 @@ function getPorteeBadgeClass(portee: string | null) {
   return "border-white/10 bg-white/5 text-white/70";
 }
 
+function getMainCategory(item: NewsItem) {
+  return item.main_category || item.category || "Non classé";
+}
+
 export default function HomePage() {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,11 +190,27 @@ export default function HomePage() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const filters = useMemo(() => {
+    const categories = Array.from(
+      new Set(items.map((item) => getMainCategory(item)).filter(Boolean))
+    );
+
+    const orderedPreferred = PREFERRED_FILTER_ORDER.filter((value) =>
+      categories.includes(value)
+    );
+
+    const remaining = categories
+      .filter((value) => !PREFERRED_FILTER_ORDER.includes(value))
+      .sort((a, b) => a.localeCompare(b, "fr"));
+
+    return ["Toutes", ...orderedPreferred, ...remaining];
+  }, [items]);
+
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
 
     return items.filter((item) => {
-      const main = item.main_category || item.category;
+      const main = getMainCategory(item);
       const matchFilter = selectedFilter === "Toutes" || main === selectedFilter;
 
       if (!matchFilter) return false;
@@ -238,6 +259,12 @@ export default function HomePage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedFilter, search]);
+
+  useEffect(() => {
+    if (!filters.includes(selectedFilter)) {
+      setSelectedFilter("Toutes");
+    }
+  }, [filters, selectedFilter]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -340,7 +367,7 @@ export default function HomePage() {
         </section>
 
         <section className="mt-8 flex flex-wrap gap-3">
-          {FILTERS.map((filter) => {
+          {filters.map((filter) => {
             const active = selectedFilter === filter;
 
             return (
@@ -389,7 +416,7 @@ export default function HomePage() {
         ) : (
           <section className="mt-10 grid gap-6">
             {paginatedItems.map((item, index) => {
-              const mainCategory = item.main_category || item.category;
+              const mainCategory = getMainCategory(item);
 
               return (
                 <Link
