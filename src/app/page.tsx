@@ -160,6 +160,8 @@ export default function HomePage() {
   const [selectedSubFilter, setSelectedSubFilter] = useState("Toutes");
   const [selectedPorteeFilter, setSelectedPorteeFilter] = useState("Toutes");
 
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
@@ -305,6 +307,9 @@ export default function HomePage() {
     return formatDateTime(filteredItems[0].published_at);
   }, [filteredItems]);
 
+  const advancedFiltersActive =
+    selectedSubFilter !== "Toutes" || selectedPorteeFilter !== "Toutes";
+
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedMainFilter, selectedSubFilter, selectedPorteeFilter, search]);
@@ -339,6 +344,11 @@ export default function HomePage() {
       console.error("Erreur déconnexion :", error);
       alert("Impossible de se déconnecter.");
     }
+  }
+
+  function resetAdvancedFilters() {
+    setSelectedSubFilter("Toutes");
+    setSelectedPorteeFilter("Toutes");
   }
 
   return (
@@ -427,83 +437,116 @@ export default function HomePage() {
           />
         </section>
 
-        <section className="mt-8 space-y-5">
-          <div>
-            <p className="mb-3 text-xs uppercase tracking-[0.28em] text-white/35">
-              Matière principale
-            </p>
-            <div className="flex flex-wrap gap-3">
-              {mainFilters.map((filter) => {
-                const active = selectedMainFilter === filter;
+        <section className="mt-8">
+          <p className="mb-3 text-xs uppercase tracking-[0.28em] text-white/35">
+            Matière principale
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {mainFilters.map((filter) => {
+              const active = selectedMainFilter === filter;
 
-                return (
-                  <button
-                    key={filter}
-                    onClick={() => setSelectedMainFilter(filter)}
-                    className={`rounded-full border px-5 py-3 text-sm font-medium transition md:text-base ${
-                      active
-                        ? "border-white bg-white text-black"
-                        : "border-white/10 bg-white/5 text-white/80 hover:border-white/20 hover:bg-white/10"
-                    }`}
-                  >
-                    {filter}
-                  </button>
-                );
-              })}
+              return (
+                <button
+                  key={filter}
+                  onClick={() => setSelectedMainFilter(filter)}
+                  className={`rounded-full border px-5 py-3 text-sm font-medium transition md:text-base ${
+                    active
+                      ? "border-white bg-white text-black"
+                      : "border-white/10 bg-white/5 text-white/80 hover:border-white/20 hover:bg-white/10"
+                  }`}
+                >
+                  {filter}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-white/85">
+                Filtres avancés
+              </p>
+              <p className="mt-1 text-sm text-white/45">
+                Sous-thème et portée, pour affiner la recherche.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {advancedFiltersActive && (
+                <button
+                  onClick={resetAdvancedFilters}
+                  className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/75 transition hover:border-white/20 hover:bg-white/10"
+                >
+                  Réinitialiser
+                </button>
+              )}
+
+              <button
+                onClick={() => setShowAdvancedFilters((v) => !v)}
+                className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-5 py-2.5 text-sm text-cyan-100 transition hover:border-cyan-400/30 hover:bg-cyan-400/15"
+              >
+                {showAdvancedFilters ? "Masquer" : "Afficher"}
+              </button>
             </div>
           </div>
 
-          {subFilters.length > 1 && (
-            <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.28em] text-white/35">
-                Sous-thème
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {subFilters.map((filter) => {
-                  const active = selectedSubFilter === filter;
+          {showAdvancedFilters && (
+            <div className="mt-5 space-y-5 border-t border-white/10 pt-5">
+              {subFilters.length > 1 && (
+                <div>
+                  <p className="mb-3 text-xs uppercase tracking-[0.28em] text-white/35">
+                    Sous-thème
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {subFilters.map((filter) => {
+                      const active = selectedSubFilter === filter;
 
-                  return (
-                    <button
-                      key={filter}
-                      onClick={() => setSelectedSubFilter(filter)}
-                      className={`rounded-full border px-4 py-2.5 text-sm transition ${
-                        active
-                          ? "border-cyan-300 bg-cyan-100 text-black"
-                          : "border-cyan-400/15 bg-cyan-400/10 text-cyan-100/85 hover:border-cyan-400/30 hover:bg-cyan-400/15"
-                      }`}
-                    >
-                      {filter}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+                      return (
+                        <button
+                          key={filter}
+                          onClick={() => setSelectedSubFilter(filter)}
+                          className={`rounded-full border px-4 py-2.5 text-sm transition ${
+                            active
+                              ? "border-cyan-300 bg-cyan-100 text-black"
+                              : "border-cyan-400/15 bg-cyan-400/10 text-cyan-100/85 hover:border-cyan-400/30 hover:bg-cyan-400/15"
+                          }`}
+                        >
+                          {filter}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
-          {porteeFilters.length > 1 && (
-            <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.28em] text-white/35">
-                Portée
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {porteeFilters.map((filter) => {
-                  const active = selectedPorteeFilter === filter;
+              {porteeFilters.length > 1 && (
+                <div>
+                  <p className="mb-3 text-xs uppercase tracking-[0.28em] text-white/35">
+                    Portée
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {porteeFilters.map((filter) => {
+                      const active = selectedPorteeFilter === filter;
 
-                  return (
-                    <button
-                      key={filter}
-                      onClick={() => setSelectedPorteeFilter(filter)}
-                      className={`rounded-full border px-4 py-2.5 text-sm transition ${
-                        active
-                          ? "border-amber-200 bg-amber-100 text-black"
-                          : "border-amber-400/15 bg-amber-400/10 text-amber-100/85 hover:border-amber-400/30 hover:bg-amber-400/15"
-                      }`}
-                    >
-                      {filter}
-                    </button>
-                  );
-                })}
-              </div>
+                      return (
+                        <button
+                          key={filter}
+                          onClick={() => setSelectedPorteeFilter(filter)}
+                          className={`rounded-full border px-4 py-2.5 text-sm transition ${
+                            active
+                              ? "border-amber-200 bg-amber-100 text-black"
+                              : "border-amber-400/15 bg-amber-400/10 text-amber-100/85 hover:border-amber-400/30 hover:bg-amber-400/15"
+                          }`}
+                        >
+                          {filter}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>
