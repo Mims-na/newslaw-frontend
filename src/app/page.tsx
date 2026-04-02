@@ -138,10 +138,28 @@ function getMainCategory(item: NewsItem) {
   return item.main_category || item.category || "Non classé";
 }
 
+function buildOrderedFilterList(
+  values: string[],
+  preferred: string[] = []
+): string[] {
+  const unique = Array.from(new Set(values.filter(Boolean)));
+
+  const preferredOrdered = preferred.filter((value) => unique.includes(value));
+  const remaining = unique
+    .filter((value) => !preferred.includes(value))
+    .sort((a, b) => a.localeCompare(b, "fr"));
+
+  return ["Toutes", ...preferredOrdered, ...remaining];
+}
+
 export default function HomePage() {
   const [items, setItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedFilter, setSelectedFilter] = useState("Toutes");
+
+  const [selectedMainFilter, setSelectedMainFilter] = useState("Toutes");
+  const [selectedSubFilter, setSelectedSubFilter] = useState("Toutes");
+  const [selectedPorteeFilter, setSelectedPorteeFilter] = useState("Toutes");
+
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
@@ -190,30 +208,61 @@ export default function HomePage() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const filters = useMemo(() => {
-    const categories = Array.from(
-      new Set(items.map((item) => getMainCategory(item)).filter(Boolean))
+  const mainFilters = useMemo(() => {
+    return buildOrderedFilterList(
+      items.map((item) => getMainCategory(item)),
+      PREFERRED_FILTER_ORDER
     );
-
-    const orderedPreferred = PREFERRED_FILTER_ORDER.filter((value) =>
-      categories.includes(value)
-    );
-
-    const remaining = categories
-      .filter((value) => !PREFERRED_FILTER_ORDER.includes(value))
-      .sort((a, b) => a.localeCompare(b, "fr"));
-
-    return ["Toutes", ...orderedPreferred, ...remaining];
   }, [items]);
+
+  const subFilters = useMemo(() => {
+    const pool =
+      selectedMainFilter === "Toutes"
+        ? items
+        : items.filter((item) => getMainCategory(item) === selectedMainFilter);
+
+    return buildOrderedFilterList(
+      pool.map((item) => item.sub_category || "").filter(Boolean)
+    );
+  }, [items, selectedMainFilter]);
+
+  const porteeFilters = useMemo(() => {
+    const pool = items.filter((item) => {
+      const mainOk =
+        selectedMainFilter === "Toutes" ||
+        getMainCategory(item) === selectedMainFilter;
+
+      const subOk =
+        selectedSubFilter === "Toutes" ||
+        item.sub_category === selectedSubFilter;
+
+      return mainOk && subOk;
+    });
+
+    return buildOrderedFilterList(
+      pool.map((item) => item.portee || "").filter(Boolean)
+    );
+  }, [items, selectedMainFilter, selectedSubFilter]);
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
 
     return items.filter((item) => {
       const main = getMainCategory(item);
-      const matchFilter = selectedFilter === "Toutes" || main === selectedFilter;
 
-      if (!matchFilter) return false;
+      const matchMain =
+        selectedMainFilter === "Toutes" || main === selectedMainFilter;
+      if (!matchMain) return false;
+
+      const matchSub =
+        selectedSubFilter === "Toutes" ||
+        item.sub_category === selectedSubFilter;
+      if (!matchSub) return false;
+
+      const matchPortee =
+        selectedPorteeFilter === "Toutes" ||
+        item.portee === selectedPorteeFilter;
+      if (!matchPortee) return false;
 
       if (!q) return true;
 
@@ -239,7 +288,7 @@ export default function HomePage() {
 
       return haystack.includes(q);
     });
-  }, [items, search, selectedFilter]);
+  }, [items, search, selectedMainFilter, selectedSubFilter, selectedPorteeFilter]);
 
   const totalPages = Math.max(
     1,
@@ -258,13 +307,25 @@ export default function HomePage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedFilter, search]);
+  }, [selectedMainFilter, selectedSubFilter, selectedPorteeFilter, search]);
 
   useEffect(() => {
-    if (!filters.includes(selectedFilter)) {
-      setSelectedFilter("Toutes");
+    if (!mainFilters.includes(selectedMainFilter)) {
+      setSelectedMainFilter("Toutes");
     }
-  }, [filters, selectedFilter]);
+  }, [mainFilters, selectedMainFilter]);
+
+  useEffect(() => {
+    if (!subFilters.includes(selectedSubFilter)) {
+      setSelectedSubFilter("Toutes");
+    }
+  }, [subFilters, selectedSubFilter]);
+
+  useEffect(() => {
+    if (!porteeFilters.includes(selectedPorteeFilter)) {
+      setSelectedPorteeFilter("Toutes");
+    }
+  }, [porteeFilters, selectedPorteeFilter]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -366,24 +427,85 @@ export default function HomePage() {
           />
         </section>
 
-        <section className="mt-8 flex flex-wrap gap-3">
-          {filters.map((filter) => {
-            const active = selectedFilter === filter;
+        <section className="mt-8 space-y-5">
+          <div>
+            <p className="mb-3 text-xs uppercase tracking-[0.28em] text-white/35">
+              Matière principale
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {mainFilters.map((filter) => {
+                const active = selectedMainFilter === filter;
 
-            return (
-              <button
-                key={filter}
-                onClick={() => setSelectedFilter(filter)}
-                className={`rounded-full border px-5 py-3 text-sm font-medium transition md:text-base ${
-                  active
-                    ? "border-white bg-white text-black"
-                    : "border-white/10 bg-white/5 text-white/80 hover:border-white/20 hover:bg-white/10"
-                }`}
-              >
-                {filter}
-              </button>
-            );
-          })}
+                return (
+                  <button
+                    key={filter}
+                    onClick={() => setSelectedMainFilter(filter)}
+                    className={`rounded-full border px-5 py-3 text-sm font-medium transition md:text-base ${
+                      active
+                        ? "border-white bg-white text-black"
+                        : "border-white/10 bg-white/5 text-white/80 hover:border-white/20 hover:bg-white/10"
+                    }`}
+                  >
+                    {filter}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {subFilters.length > 1 && (
+            <div>
+              <p className="mb-3 text-xs uppercase tracking-[0.28em] text-white/35">
+                Sous-thème
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {subFilters.map((filter) => {
+                  const active = selectedSubFilter === filter;
+
+                  return (
+                    <button
+                      key={filter}
+                      onClick={() => setSelectedSubFilter(filter)}
+                      className={`rounded-full border px-4 py-2.5 text-sm transition ${
+                        active
+                          ? "border-cyan-300 bg-cyan-100 text-black"
+                          : "border-cyan-400/15 bg-cyan-400/10 text-cyan-100/85 hover:border-cyan-400/30 hover:bg-cyan-400/15"
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {porteeFilters.length > 1 && (
+            <div>
+              <p className="mb-3 text-xs uppercase tracking-[0.28em] text-white/35">
+                Portée
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {porteeFilters.map((filter) => {
+                  const active = selectedPorteeFilter === filter;
+
+                  return (
+                    <button
+                      key={filter}
+                      onClick={() => setSelectedPorteeFilter(filter)}
+                      className={`rounded-full border px-4 py-2.5 text-sm transition ${
+                        active
+                          ? "border-amber-200 bg-amber-100 text-black"
+                          : "border-amber-400/15 bg-amber-400/10 text-amber-100/85 hover:border-amber-400/30 hover:bg-amber-400/15"
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="mt-8 flex flex-wrap items-end justify-between gap-6 text-white/55">
