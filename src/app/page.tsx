@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -119,6 +120,8 @@ function getFreeExcerpt(text: string | null, maxLength = 180) {
 }
 
 export default function HomePage() {
+  const router = useRouter();
+
   const [items, setItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -586,9 +589,10 @@ export default function HomePage() {
               const hasFullAccess = isPremium || freeAccessibleIds.has(item.id);
 
               return (
-                <div
+                <article
                   key={item.id}
-                  className="group rounded-[2rem] border border-white/10 bg-[#07101d]/85 p-7 shadow-[0_10px_40px_rgba(0,0,0,0.25)] transition hover:border-white/20 hover:bg-[#0a1424] md:p-8"
+                  onClick={() => router.push(`/news/${item.id}`)}
+                  className="group cursor-pointer rounded-[2rem] border border-white/10 bg-[#07101d]/85 p-7 shadow-[0_10px_40px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#0a1424] md:p-8"
                 >
                   <div className="flex flex-wrap items-center gap-3">
                     {item.document_type && (
@@ -688,6 +692,7 @@ export default function HomePage() {
                         <div className="mt-3">
                           <Link
                             href="/pricing"
+                            onClick={(e) => e.stopPropagation()}
                             className="inline-flex items-center rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-sm text-amber-100 transition hover:border-amber-400/30 hover:bg-amber-400/15"
                           >
                             Passer au premium
@@ -698,32 +703,21 @@ export default function HomePage() {
                   </div>
 
                   <div className="mt-6 flex flex-wrap items-center gap-3">
-                    {hasFullAccess ? (
-                      <Link
-                        href={`/news/${item.id}`}
-                        className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-white transition hover:border-white/20 hover:bg-white/10"
-                      >
-                        Lire la fiche complète
-                      </Link>
-                    ) : (
-                      <Link
-                        href={`/news/${item.id}`}
-                        className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-white transition hover:border-white/20 hover:bg-white/10"
-                      >
-                        Voir l’aperçu
-                      </Link>
-                    )}
+                    <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-white">
+                      {hasFullAccess ? "Lire la fiche complète" : "Voir l’aperçu"}
+                    </span>
 
-                    {item.tags && item.tags.slice(0, 3).map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                    {item.tags &&
+                      item.tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                   </div>
-                </div>
+                </article>
               );
             })}
           </section>
