@@ -25,6 +25,11 @@ type NewsItem = {
   tags: string[] | null;
 };
 
+type UserProfile = {
+  subscription_plan: "free" | "premium";
+  role: "user" | "expert" | "admin";
+};
+
 const PREFERRED_FILTER_ORDER = [
   "Droit public des affaires",
   "Régulation et numérique",
@@ -39,13 +44,12 @@ const PREFERRED_FILTER_ORDER = [
 ];
 
 const ITEMS_PER_PAGE = 6;
+const FREE_FULL_ACCESS_COUNT = 3;
 
 function formatDate(dateString: string | null) {
   if (!dateString) return null;
-
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return null;
-
   return date.toLocaleDateString("fr-FR", {
     day: "numeric",
     month: "long",
@@ -55,10 +59,8 @@ function formatDate(dateString: string | null) {
 
 function formatDateTime(dateString: string | null) {
   if (!dateString) return null;
-
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return null;
-
   return date.toLocaleDateString("fr-FR", {
     day: "numeric",
     month: "short",
@@ -68,69 +70,31 @@ function formatDateTime(dateString: string | null) {
   });
 }
 
-function getExcerpt(item: NewsItem) {
-  return (
-    item.practical_impact ||
-    item.summary ||
-    "Aucun extrait disponible pour cette fiche."
-  );
-}
-
 function getTypeBadgeClass(type: string | null) {
   const value = (type || "").toLowerCase();
-
-  if (value.includes("avis")) {
-    return "border-cyan-400/30 bg-cyan-400/10 text-cyan-200";
-  }
-  if (value.includes("sanction") || value.includes("transaction")) {
-    return "border-rose-400/30 bg-rose-400/10 text-rose-200";
-  }
-  if (value.includes("communiqué") || value.includes("communique")) {
-    return "border-amber-400/30 bg-amber-400/10 text-amber-200";
-  }
-
+  if (value.includes("avis")) return "border-cyan-400/30 bg-cyan-400/10 text-cyan-200";
+  if (value.includes("sanction") || value.includes("transaction")) return "border-rose-400/30 bg-rose-400/10 text-rose-200";
+  if (value.includes("communiqué") || value.includes("communique")) return "border-amber-400/30 bg-amber-400/10 text-amber-200";
   return "border-violet-400/30 bg-violet-400/10 text-violet-200";
 }
 
 function getSourceBadgeClass(source: string | null) {
   const value = (source || "").toLowerCase();
-
-  if (value.includes("amf")) {
-    return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
-  }
-  if (value.includes("conseil")) {
-    return "border-sky-400/30 bg-sky-400/10 text-sky-200";
-  }
-  if (
-    value.includes("judilibre") ||
-    value.includes("légifrance") ||
-    value.includes("legifrance")
-  ) {
+  if (value.includes("amf")) return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
+  if (value.includes("conseil")) return "border-sky-400/30 bg-sky-400/10 text-sky-200";
+  if (value.includes("judilibre") || value.includes("légifrance") || value.includes("legifrance")) {
     return "border-indigo-400/30 bg-indigo-400/10 text-indigo-200";
   }
-
   return "border-white/15 bg-white/5 text-white/80";
 }
 
 function getPorteeBadgeClass(portee: string | null) {
   const value = (portee || "").toLowerCase();
-
-  if (value.includes("sanction")) {
-    return "border-rose-400/30 bg-rose-400/10 text-rose-200";
-  }
-  if (value.includes("réforme") || value.includes("reforme")) {
-    return "border-amber-400/30 bg-amber-400/10 text-amber-200";
-  }
-  if (value.includes("encadrement")) {
-    return "border-cyan-400/30 bg-cyan-400/10 text-cyan-200";
-  }
-  if (value.includes("alerte")) {
-    return "border-orange-400/30 bg-orange-400/10 text-orange-200";
-  }
-  if (value.includes("validation") || value.includes("confirmation")) {
-    return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
-  }
-
+  if (value.includes("sanction")) return "border-rose-400/30 bg-rose-400/10 text-rose-200";
+  if (value.includes("réforme") || value.includes("reforme")) return "border-amber-400/30 bg-amber-400/10 text-amber-200";
+  if (value.includes("encadrement")) return "border-cyan-400/30 bg-cyan-400/10 text-cyan-200";
+  if (value.includes("alerte")) return "border-orange-400/30 bg-orange-400/10 text-orange-200";
+  if (value.includes("validation") || value.includes("confirmation")) return "border-emerald-400/30 bg-emerald-400/10 text-emerald-200";
   return "border-white/10 bg-white/5 text-white/70";
 }
 
@@ -138,18 +102,20 @@ function getMainCategory(item: NewsItem) {
   return item.main_category || item.category || "Non classé";
 }
 
-function buildOrderedFilterList(
-  values: string[],
-  preferred: string[] = []
-): string[] {
+function buildOrderedFilterList(values: string[], preferred: string[] = []) {
   const unique = Array.from(new Set(values.filter(Boolean)));
-
   const preferredOrdered = preferred.filter((value) => unique.includes(value));
   const remaining = unique
     .filter((value) => !preferred.includes(value))
     .sort((a, b) => a.localeCompare(b, "fr"));
-
   return ["Toutes", ...preferredOrdered, ...remaining];
+}
+
+function getFreeExcerpt(text: string | null, maxLength = 180) {
+  const value = (text || "").trim();
+  if (!value) return "Accès partiel réservé en version gratuite.";
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, maxLength).trim()}…`;
 }
 
 export default function HomePage() {
@@ -159,12 +125,12 @@ export default function HomePage() {
   const [selectedMainFilter, setSelectedMainFilter] = useState("Toutes");
   const [selectedSubFilter, setSelectedSubFilter] = useState("Toutes");
   const [selectedPorteeFilter, setSelectedPorteeFilter] = useState("Toutes");
-
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     async function fetchNews() {
@@ -191,24 +157,57 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    async function fetchSession() {
+    async function fetchAuthData() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       setSessionEmail(session?.user?.email ?? null);
+
+      if (!session?.user?.id) {
+        setProfile(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("subscription_plan, role")
+        .eq("id", session.user.id)
+        .single();
+
+      if (error) {
+        console.error("Erreur chargement profil :", error);
+        setProfile(null);
+      } else {
+        setProfile(data as UserProfile);
+      }
     }
 
-    fetchSession();
+    fetchAuthData();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSessionEmail(session?.user?.email ?? null);
+
+      if (!session?.user?.id) {
+        setProfile(null);
+        return;
+      }
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("subscription_plan, role")
+        .eq("id", session.user.id)
+        .single();
+
+      setProfile((data as UserProfile) || null);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const isPremium = profile?.subscription_plan === "premium";
 
   const mainFilters = useMemo(() => {
     return buildOrderedFilterList(
@@ -292,10 +291,7 @@ export default function HomePage() {
     });
   }, [items, search, selectedMainFilter, selectedSubFilter, selectedPorteeFilter]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredItems.length / ITEMS_PER_PAGE)
-  );
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE));
 
   const paginatedItems = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -307,6 +303,10 @@ export default function HomePage() {
     return formatDateTime(filteredItems[0].published_at);
   }, [filteredItems]);
 
+  const freeAccessibleIds = useMemo(() => {
+    return new Set(items.slice(0, FREE_FULL_ACCESS_COUNT).map((item) => item.id));
+  }, [items]);
+
   const advancedFiltersActive =
     selectedSubFilter !== "Toutes" || selectedPorteeFilter !== "Toutes";
 
@@ -315,27 +315,19 @@ export default function HomePage() {
   }, [selectedMainFilter, selectedSubFilter, selectedPorteeFilter, search]);
 
   useEffect(() => {
-    if (!mainFilters.includes(selectedMainFilter)) {
-      setSelectedMainFilter("Toutes");
-    }
+    if (!mainFilters.includes(selectedMainFilter)) setSelectedMainFilter("Toutes");
   }, [mainFilters, selectedMainFilter]);
 
   useEffect(() => {
-    if (!subFilters.includes(selectedSubFilter)) {
-      setSelectedSubFilter("Toutes");
-    }
+    if (!subFilters.includes(selectedSubFilter)) setSelectedSubFilter("Toutes");
   }, [subFilters, selectedSubFilter]);
 
   useEffect(() => {
-    if (!porteeFilters.includes(selectedPorteeFilter)) {
-      setSelectedPorteeFilter("Toutes");
-    }
+    if (!porteeFilters.includes(selectedPorteeFilter)) setSelectedPorteeFilter("Toutes");
   }, [porteeFilters, selectedPorteeFilter]);
 
   useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
+    if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
 
   async function handleSignOut() {
@@ -366,12 +358,14 @@ export default function HomePage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/favorites"
-                className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-white transition hover:border-white/20 hover:bg-white/10"
-              >
-                Mes favoris
-              </Link>
+              {isPremium && (
+                <Link
+                  href="/favorites"
+                  className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-white transition hover:border-white/20 hover:bg-white/10"
+                >
+                  Mes favoris
+                </Link>
+              )}
 
               {sessionEmail ? (
                 <button
@@ -388,6 +382,15 @@ export default function HomePage() {
                   Connexion
                 </Link>
               )}
+
+              {!isPremium && (
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center rounded-full border border-amber-400/20 bg-amber-400/10 px-5 py-2.5 text-sm text-amber-100 transition hover:border-amber-400/30 hover:bg-amber-400/15"
+                >
+                  Passer au premium
+                </Link>
+              )}
             </div>
           </div>
 
@@ -398,8 +401,7 @@ export default function HomePage() {
               </h1>
 
               <p className="mt-8 max-w-4xl text-xl leading-[1.8] text-white/72 md:text-2xl">
-                Décisions, avis, communiqués et sanctions enrichis avec
-                matière principale, sous-thème, portée et apport pratique.
+                Décisions, avis, communiqués et sanctions enrichis avec matière principale, sous-thème, portée et apport pratique.
               </p>
             </div>
 
@@ -415,6 +417,10 @@ export default function HomePage() {
                 <div className="flex items-center justify-between border-b border-white/10 pb-3">
                   <span>Résultats visibles</span>
                   <span className="text-white">{filteredItems.length}</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <span>Accès gratuit complet</span>
+                  <span className="text-white">{FREE_FULL_ACCESS_COUNT} dernières fiches</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Dernière mise à jour</span>
@@ -444,7 +450,6 @@ export default function HomePage() {
           <div className="flex flex-wrap gap-3">
             {mainFilters.map((filter) => {
               const active = selectedMainFilter === filter;
-
               return (
                 <button
                   key={filter}
@@ -465,9 +470,7 @@ export default function HomePage() {
         <section className="mt-6 rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-white/85">
-                Filtres avancés
-              </p>
+              <p className="text-sm font-medium text-white/85">Filtres avancés</p>
               <p className="mt-1 text-sm text-white/45">
                 Sous-thème et portée, pour affiner la recherche.
               </p>
@@ -502,7 +505,6 @@ export default function HomePage() {
                   <div className="flex flex-wrap gap-3">
                     {subFilters.map((filter) => {
                       const active = selectedSubFilter === filter;
-
                       return (
                         <button
                           key={filter}
@@ -529,7 +531,6 @@ export default function HomePage() {
                   <div className="flex flex-wrap gap-3">
                     {porteeFilters.map((filter) => {
                       const active = selectedPorteeFilter === filter;
-
                       return (
                         <button
                           key={filter}
@@ -582,46 +583,32 @@ export default function HomePage() {
           <section className="mt-10 grid gap-6">
             {paginatedItems.map((item, index) => {
               const mainCategory = getMainCategory(item);
+              const hasFullAccess = isPremium || freeAccessibleIds.has(item.id);
 
               return (
-                <Link
+                <div
                   key={item.id}
-                  href={`/news/${item.id}`}
-                  className="group block rounded-[2rem] border border-white/10 bg-[#07101d]/85 p-7 shadow-[0_10px_40px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-[#0a1424] md:p-8"
+                  className="group rounded-[2rem] border border-white/10 bg-[#07101d]/85 p-7 shadow-[0_10px_40px_rgba(0,0,0,0.25)] transition hover:border-white/20 hover:bg-[#0a1424] md:p-8"
                 >
                   <div className="flex flex-wrap items-center gap-3">
                     {item.document_type && (
-                      <span
-                        className={`rounded-full border px-4 py-2 text-[11px] font-medium uppercase tracking-wide ${getTypeBadgeClass(
-                          item.document_type
-                        )}`}
-                      >
+                      <span className={`rounded-full border px-4 py-2 text-[11px] font-medium uppercase tracking-wide ${getTypeBadgeClass(item.document_type)}`}>
                         {item.document_type}
                       </span>
                     )}
 
                     {item.source && (
-                      <span
-                        className={`rounded-full border px-4 py-2 text-[11px] font-medium uppercase tracking-wide ${getSourceBadgeClass(
-                          item.source
-                        )}`}
-                      >
+                      <span className={`rounded-full border px-4 py-2 text-[11px] font-medium uppercase tracking-wide ${getSourceBadgeClass(item.source)}`}>
                         {item.source}
                       </span>
                     )}
 
-                    {mainCategory && (
-                      <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-white/65">
-                        {mainCategory}
-                      </span>
-                    )}
+                    <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-white/65">
+                      {mainCategory}
+                    </span>
 
                     {item.portee && (
-                      <span
-                        className={`rounded-full border px-4 py-2 text-[11px] font-medium uppercase tracking-wide ${getPorteeBadgeClass(
-                          item.portee
-                        )}`}
-                      >
+                      <span className={`rounded-full border px-4 py-2 text-[11px] font-medium uppercase tracking-wide ${getPorteeBadgeClass(item.portee)}`}>
                         {item.portee}
                       </span>
                     )}
@@ -654,7 +641,7 @@ export default function HomePage() {
                   </div>
 
                   <div className="mt-6 flex items-start justify-between gap-5">
-                    <h2 className="max-w-5xl text-2xl font-semibold leading-tight text-white transition group-hover:text-white md:text-4xl">
+                    <h2 className="max-w-5xl text-2xl font-semibold leading-tight text-white md:text-4xl">
                       {item.title}
                     </h2>
 
@@ -676,27 +663,67 @@ export default function HomePage() {
                   )}
 
                   <div className="mt-6 rounded-[1.5rem] border border-white/8 bg-black/20 p-6">
-                    <p className="text-xs uppercase tracking-[0.28em] text-white/35">
-                      Apport pratique
-                    </p>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs uppercase tracking-[0.28em] text-white/35">
+                        Apport pratique
+                      </p>
+                      {!hasFullAccess && (
+                        <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1.5 text-[11px] uppercase tracking-wide text-amber-100">
+                          Aperçu
+                        </span>
+                      )}
+                    </div>
+
                     <p className="mt-4 text-lg leading-[1.9] text-white/82 md:text-xl">
-                      {getExcerpt(item)}
+                      {hasFullAccess
+                        ? item.practical_impact || item.summary || "Aucun contenu disponible."
+                        : getFreeExcerpt(item.practical_impact || item.summary, 220)}
                     </p>
+
+                    {!hasFullAccess && (
+                      <div className="mt-5 rounded-[1.25rem] border border-amber-400/15 bg-amber-400/5 p-4">
+                        <p className="text-sm text-white/72">
+                          Débloquez l’analyse complète, tout l’historique et les outils premium.
+                        </p>
+                        <div className="mt-3">
+                          <Link
+                            href="/pricing"
+                            className="inline-flex items-center rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-sm text-amber-100 transition hover:border-amber-400/30 hover:bg-amber-400/15"
+                          >
+                            Passer au premium
+                          </Link>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {item.tags && item.tags.length > 0 && (
-                    <div className="mt-6 flex flex-wrap gap-2.5">
-                      {item.tags.slice(0, 4).map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </Link>
+                  <div className="mt-6 flex flex-wrap items-center gap-3">
+                    {hasFullAccess ? (
+                      <Link
+                        href={`/news/${item.id}`}
+                        className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-white transition hover:border-white/20 hover:bg-white/10"
+                      >
+                        Lire la fiche complète
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/news/${item.id}`}
+                        className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-white transition hover:border-white/20 hover:bg-white/10"
+                      >
+                        Voir l’aperçu
+                      </Link>
+                    )}
+
+                    {item.tags && item.tags.slice(0, 3).map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               );
             })}
           </section>
@@ -717,9 +744,7 @@ export default function HomePage() {
             </div>
 
             <button
-              onClick={() =>
-                setCurrentPage((p) => Math.min(totalPages, p + 1))
-              }
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
               className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
             >
