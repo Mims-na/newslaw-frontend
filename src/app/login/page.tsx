@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -14,33 +13,35 @@ function getURL() {
     url = `https://${url}`;
   }
 
-  return url.replace(/\/+$/, "");
+  if (!url.endsWith("/")) {
+    url = `${url}/`;
+  }
+
+  return url;
 }
 
 export default function LoginPage() {
+  const [mode, setMode] = useState<"magic" | "password">("password");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
 
-    const redirectTo = getURL();
-
-    console.log("REDIRECT URL =", redirectTo);
-
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: redirectTo,
+        emailRedirectTo: getURL(),
       },
     });
 
     if (error) {
-      console.error("Supabase auth error:", error);
-      setMessage(`Erreur: ${error.message}`);
+      console.error(error);
+      setMessage("Impossible d’envoyer le lien de connexion.");
     } else {
       setMessage("Lien envoyé. Vérifie ta boîte mail.");
     }
@@ -48,47 +49,115 @@ export default function LoginPage() {
     setLoading(false);
   }
 
+  async function handlePasswordLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setMessage(null);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      console.error(error);
+      setMessage("Email ou mot de passe incorrect.");
+    } else {
+      window.location.href = "/";
+    }
+
+    setLoading(false);
+  }
+
   return (
-    <main className="min-h-screen bg-black px-6 py-10 text-white md:px-10">
-      <div className="mx-auto max-w-2xl">
-        <Link
-          href="/"
-          className="inline-flex items-center text-sm text-white/70 transition hover:text-white"
+    <main className="min-h-screen bg-[#02040a] px-6 py-10 text-white md:px-10">
+      <div className="mx-auto max-w-2xl rounded-[2rem] border border-white/10 bg-[#07101d]/85 p-8 md:p-10">
+        <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+          Connexion
+        </p>
+
+        <h1 className="mt-4 text-4xl font-semibold md:text-5xl">
+          Accéder à Newslaw
+        </h1>
+
+        <p className="mt-4 text-white/65">
+          Connecte-toi par mot de passe ou par lien email.
+        </p>
+
+        <div className="mt-8 flex gap-3">
+          <button
+            onClick={() => setMode("password")}
+            className={`rounded-full border px-5 py-2.5 text-sm transition ${
+              mode === "password"
+                ? "border-white bg-white text-black"
+                : "border-white/10 bg-white/5 text-white"
+            }`}
+          >
+            Mot de passe
+          </button>
+
+          <button
+            onClick={() => setMode("magic")}
+            className={`rounded-full border px-5 py-2.5 text-sm transition ${
+              mode === "magic"
+                ? "border-white bg-white text-black"
+                : "border-white/10 bg-white/5 text-white"
+            }`}
+          >
+            Lien email
+          </button>
+        </div>
+
+        <form
+          onSubmit={mode === "password" ? handlePasswordLogin : handleMagicLink}
+          className="mt-8 space-y-5"
         >
-          ← Retour à l’accueil
-        </Link>
-
-        <div className="mt-10 rounded-[2rem] border border-white/10 bg-[#020817] p-8 md:p-10">
-          <h1 className="text-3xl font-semibold">Connexion</h1>
-          <p className="mt-4 text-white/70">
-            Entre ton email pour recevoir un lien de connexion.
-          </p>
-
-          <form onSubmit={handleLogin} className="mt-8 space-y-5">
+          <div>
+            <label className="mb-2 block text-sm text-white/75">Email</label>
             <input
               type="email"
-              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="ton@email.com"
-              className="w-full rounded-full border border-white/15 bg-black px-6 py-4 text-white outline-none placeholder:text-white/35 focus:border-white/30"
+              required
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+              placeholder="vous@exemple.com"
             />
+          </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded-full border border-white/15 px-6 py-3 text-white transition hover:bg-white/5 disabled:opacity-50"
-            >
-              {loading ? "Envoi..." : "Recevoir le lien"}
-            </button>
-          </form>
-
-          {message && (
-            <p className="mt-6 text-sm text-white/75">
-              {message}
-            </p>
+          {mode === "password" && (
+            <div>
+              <label className="mb-2 block text-sm text-white/75">
+                Mot de passe
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
+                placeholder="Votre mot de passe"
+              />
+            </div>
           )}
-        </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-6 py-3 text-white transition hover:border-cyan-400/30 hover:bg-cyan-400/15 disabled:opacity-50"
+          >
+            {loading
+              ? "Connexion..."
+              : mode === "password"
+              ? "Se connecter"
+              : "Recevoir le lien"}
+          </button>
+        </form>
+
+        {message && (
+          <p className="mt-6 text-sm text-white/75">
+            {message}
+          </p>
+        )}
       </div>
     </main>
   );
