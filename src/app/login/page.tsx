@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -136,226 +137,293 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#02040a] px-6 py-10 text-white md:px-10">
-      <div className="mx-auto max-w-3xl rounded-[2rem] border border-white/10 bg-[#07101d]/85 p-8 md:p-10">
-        <p className="text-xs uppercase tracking-[0.35em] text-white/40">
-          Compte
-        </p>
-
-        <h1 className="mt-4 text-4xl font-semibold md:text-5xl">
-          {pageMode === "login" ? "Accéder à Newslaw" : "Créer un compte"}
-        </h1>
-
-        <p className="mt-4 text-white/65">
-          {pageMode === "login"
-            ? "Connecte-toi par mot de passe ou par lien email."
-            : "Crée un compte et indique ton profil pour mieux comprendre les utilisateurs du service."}
-        </p>
-
-        <div className="mt-8 flex gap-3">
-          <button
-            onClick={() => {
-              setPageMode("login");
-              setMessage(null);
-            }}
-            className={`rounded-full border px-5 py-2.5 text-sm transition ${
-              pageMode === "login"
-                ? "border-white bg-white text-black"
-                : "border-white/10 bg-white/5 text-white"
-            }`}
+    <main className="min-h-screen bg-[#02040a] bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.11),_transparent_30%),radial-gradient(circle_at_20%_20%,_rgba(168,85,247,0.10),_transparent_25%),linear-gradient(to_bottom,_#030712,_#02040a)] px-6 py-8 text-white md:px-10 md:py-10">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <Link
+            href="/"
+            className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-white/85 transition hover:border-white/20 hover:bg-white/10"
           >
-            Connexion
-          </button>
+            ← Retour au site
+          </Link>
 
-          <button
-            onClick={() => {
-              setPageMode("signup");
-              setMessage(null);
-            }}
-            className={`rounded-full border px-5 py-2.5 text-sm transition ${
-              pageMode === "signup"
-                ? "border-white bg-white text-black"
-                : "border-white/10 bg-white/5 text-white"
-            }`}
-          >
-            Inscription
-          </button>
+          <p className="hidden text-xs uppercase tracking-[0.35em] text-white/35 md:block">
+            Newslaw
+          </p>
         </div>
 
-        {pageMode === "login" ? (
-          <>
-            <div className="mt-8 flex gap-3">
+        <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+          <section className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-sm md:p-10">
+            <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+              Compte
+            </p>
+
+            <h1 className="mt-5 text-5xl font-semibold leading-[0.98] tracking-tight text-white md:text-7xl">
+              {pageMode === "login" ? "Accéder à Newslaw" : "Créer un compte"}
+            </h1>
+
+            <p className="mt-8 max-w-xl text-lg leading-8 text-white/72 md:text-xl">
+              {pageMode === "login"
+                ? "Connecte-toi pour accéder à la veille complète, gérer tes favoris et utiliser le produit de manière continue."
+                : "Crée ton compte pour rejoindre la beta, personnaliser ton profil et nous aider à mieux comprendre les usages du service."}
+            </p>
+
+            <div className="mt-10 grid gap-4">
+              <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-5">
+                <p className="text-sm font-medium text-white">Lecture rapide</p>
+                <p className="mt-2 text-sm leading-7 text-white/58">
+                  Une veille juridique structurée, pensée pour aller plus vite à
+                  l’essentiel utile.
+                </p>
+              </div>
+
+              <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-5">
+                <p className="text-sm font-medium text-white">Usage premium</p>
+                <p className="mt-2 text-sm leading-7 text-white/58">
+                  Accès complet aux fiches, historique intégral, favoris et
+                  expérience de lecture sans coupure.
+                </p>
+              </div>
+
+              <div className="rounded-[1.5rem] border border-white/10 bg-black/20 p-5">
+                <p className="text-sm font-medium text-white">Beta en cours</p>
+                <p className="mt-2 text-sm leading-7 text-white/58">
+                  La version actuelle continue d’évoluer avec les premiers
+                  retours utilisateurs.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-[2rem] border border-white/10 bg-[#07101d]/90 p-6 shadow-[0_10px_40px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
+            <div className="flex flex-wrap gap-3">
               <button
-                onClick={() => setLoginMode("password")}
-                className={`rounded-full border px-5 py-2.5 text-sm transition ${
-                  loginMode === "password"
-                    ? "border-cyan-300 bg-cyan-100 text-black"
-                    : "border-white/10 bg-white/5 text-white"
+                onClick={() => {
+                  setPageMode("login");
+                  setMessage(null);
+                }}
+                className={`rounded-full border px-5 py-2.5 text-sm font-medium transition ${
+                  pageMode === "login"
+                    ? "border-white bg-white text-black"
+                    : "border-white/10 bg-white/5 text-white/85 hover:border-white/20 hover:bg-white/10"
                 }`}
               >
-                Mot de passe
+                Connexion
               </button>
 
               <button
-                onClick={() => setLoginMode("magic")}
-                className={`rounded-full border px-5 py-2.5 text-sm transition ${
-                  loginMode === "magic"
-                    ? "border-cyan-300 bg-cyan-100 text-black"
-                    : "border-white/10 bg-white/5 text-white"
+                onClick={() => {
+                  setPageMode("signup");
+                  setMessage(null);
+                }}
+                className={`rounded-full border px-5 py-2.5 text-sm font-medium transition ${
+                  pageMode === "signup"
+                    ? "border-white bg-white text-black"
+                    : "border-white/10 bg-white/5 text-white/85 hover:border-white/20 hover:bg-white/10"
                 }`}
               >
-                Lien email
+                Inscription
               </button>
             </div>
 
-            <form
-              onSubmit={
-                loginMode === "password"
-                  ? handlePasswordLogin
-                  : handleMagicLink
-              }
-              className="mt-8 space-y-5"
-            >
-              <div>
-                <label className="mb-2 block text-sm text-white/75">Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
-                  placeholder="vous@exemple.com"
-                />
-              </div>
-
-              {loginMode === "password" && (
-                <div>
-                  <label className="mb-2 block text-sm text-white/75">
+            {pageMode === "login" ? (
+              <>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => setLoginMode("password")}
+                    className={`rounded-full border px-4 py-2 text-sm transition ${
+                      loginMode === "password"
+                        ? "border-cyan-300 bg-cyan-100 text-black"
+                        : "border-cyan-400/15 bg-cyan-400/10 text-cyan-100/90 hover:border-cyan-400/30 hover:bg-cyan-400/15"
+                    }`}
+                  >
                     Mot de passe
-                  </label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
-                    placeholder="Votre mot de passe"
-                  />
+                  </button>
+
+                  <button
+                    onClick={() => setLoginMode("magic")}
+                    className={`rounded-full border px-4 py-2 text-sm transition ${
+                      loginMode === "magic"
+                        ? "border-cyan-300 bg-cyan-100 text-black"
+                        : "border-cyan-400/15 bg-cyan-400/10 text-cyan-100/90 hover:border-cyan-400/30 hover:bg-cyan-400/15"
+                    }`}
+                  >
+                    Lien email
+                  </button>
                 </div>
-              )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-6 py-3 text-white transition hover:border-cyan-400/30 hover:bg-cyan-400/15 disabled:opacity-50"
-              >
-                {loading
-                  ? "Chargement..."
-                  : loginMode === "password"
-                  ? "Se connecter"
-                  : "Recevoir le lien"}
-              </button>
-            </form>
-          </>
-        ) : (
-          <form onSubmit={handleSignup} className="mt-8 space-y-5">
-            <div>
-              <label className="mb-2 block text-sm text-white/75">Email</label>
-              <input
-                type="email"
-                value={signupEmail}
-                onChange={(e) => setSignupEmail(e.target.value)}
-                required
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
-                placeholder="vous@exemple.com"
-              />
-            </div>
+                <form
+                  onSubmit={
+                    loginMode === "password"
+                      ? handlePasswordLogin
+                      : handleMagicLink
+                  }
+                  className="mt-8 space-y-5"
+                >
+                  <div>
+                    <label className="mb-2 block text-sm text-white/72">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.07]"
+                      placeholder="vous@exemple.com"
+                    />
+                  </div>
 
-            <div>
-              <label className="mb-2 block text-sm text-white/75">
-                Mot de passe
-              </label>
-              <input
-                type="password"
-                value={signupPassword}
-                onChange={(e) => setSignupPassword(e.target.value)}
-                required
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
-                placeholder="Choisis un mot de passe"
-              />
-            </div>
+                  {loginMode === "password" && (
+                    <div>
+                      <label className="mb-2 block text-sm text-white/72">
+                        Mot de passe
+                      </label>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.07]"
+                        placeholder="Votre mot de passe"
+                      />
+                    </div>
+                  )}
 
-            <div>
-              <label className="mb-2 block text-sm text-white/75">
-                Niveau / statut
-              </label>
-              <select
-                value={userLevel}
-                onChange={(e) => setUserLevel(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
-              >
-                <option value="" className="bg-[#0b1220]">
-                  Sélectionner
-                </option>
-                <option value="M1" className="bg-[#0b1220]">M1</option>
-                <option value="M2" className="bg-[#0b1220]">M2</option>
-                <option value="Élève-avocat" className="bg-[#0b1220]">
-                  Élève-avocat
-                </option>
-                <option value="Avocat" className="bg-[#0b1220]">Avocat</option>
-                <option value="Juriste" className="bg-[#0b1220]">Juriste</option>
-                <option value="Autre" className="bg-[#0b1220]">Autre</option>
-              </select>
-            </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-400/10 px-6 py-3 text-sm font-medium text-cyan-50 transition hover:border-cyan-400/30 hover:bg-cyan-400/15 disabled:opacity-50"
+                  >
+                    {loading
+                      ? "Chargement..."
+                      : loginMode === "password"
+                      ? "Se connecter"
+                      : "Recevoir le lien"}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <form onSubmit={handleSignup} className="mt-8 space-y-5">
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm text-white/72">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      required
+                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.07]"
+                      placeholder="vous@exemple.com"
+                    />
+                  </div>
 
-            <div>
-              <label className="mb-2 block text-sm text-white/75">Lieu</label>
-              <input
-                type="text"
-                value={userLocation}
-                onChange={(e) => setUserLocation(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none"
-                placeholder="Paris, Lyon, Bruxelles..."
-              />
-            </div>
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm text-white/72">
+                      Mot de passe
+                    </label>
+                    <input
+                      type="password"
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      required
+                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.07]"
+                      placeholder="Choisis un mot de passe"
+                    />
+                  </div>
 
-            <div>
-              <label className="mb-3 block text-sm text-white/75">
-                Matières d’intérêt
-              </label>
-              <div className="flex flex-wrap gap-3">
-                {INTEREST_OPTIONS.map((interest) => {
-                  const active = interests.includes(interest);
-
-                  return (
-                    <button
-                      key={interest}
-                      type="button"
-                      onClick={() => toggleInterest(interest)}
-                      className={`rounded-full border px-4 py-2 text-sm transition ${
-                        active
-                          ? "border-cyan-300 bg-cyan-100 text-black"
-                          : "border-white/10 bg-white/5 text-white"
-                      }`}
+                  <div>
+                    <label className="mb-2 block text-sm text-white/72">
+                      Niveau / statut
+                    </label>
+                    <select
+                      value={userLevel}
+                      onChange={(e) => setUserLevel(e.target.value)}
+                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white outline-none transition focus:border-cyan-300/40 focus:bg-white/[0.07]"
                     >
-                      {interest}
-                    </button>
-                  );
-                })}
+                      <option value="" className="bg-[#0b1220]">
+                        Sélectionner
+                      </option>
+                      <option value="M1" className="bg-[#0b1220]">
+                        M1
+                      </option>
+                      <option value="M2" className="bg-[#0b1220]">
+                        M2
+                      </option>
+                      <option value="Élève-avocat" className="bg-[#0b1220]">
+                        Élève-avocat
+                      </option>
+                      <option value="Avocat" className="bg-[#0b1220]">
+                        Avocat
+                      </option>
+                      <option value="Juriste" className="bg-[#0b1220]">
+                        Juriste
+                      </option>
+                      <option value="Autre" className="bg-[#0b1220]">
+                        Autre
+                      </option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm text-white/72">
+                      Lieu
+                    </label>
+                    <input
+                      type="text"
+                      value={userLocation}
+                      onChange={(e) => setUserLocation(e.target.value)}
+                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.07]"
+                      placeholder="Paris, Lyon, Bruxelles..."
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-3 block text-sm text-white/72">
+                    Matières d’intérêt
+                  </label>
+                  <div className="flex flex-wrap gap-2.5">
+                    {INTEREST_OPTIONS.map((interest) => {
+                      const active = interests.includes(interest);
+
+                      return (
+                        <button
+                          key={interest}
+                          type="button"
+                          onClick={() => toggleInterest(interest)}
+                          className={`rounded-full border px-3.5 py-2 text-sm transition ${
+                            active
+                              ? "border-cyan-300 bg-cyan-100 text-black shadow-[0_0_0_1px_rgba(255,255,255,0.04)]"
+                              : "border-white/10 bg-white/5 text-white/82 hover:border-white/20 hover:bg-white/10"
+                          }`}
+                        >
+                          {interest}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-400/10 px-6 py-3 text-sm font-medium text-cyan-50 transition hover:border-cyan-400/30 hover:bg-cyan-400/15 disabled:opacity-50"
+                >
+                  {loading ? "Création..." : "Créer mon compte"}
+                </button>
+              </form>
+            )}
+
+            {message && (
+              <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/75">
+                {message}
               </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-6 py-3 text-white transition hover:border-cyan-400/30 hover:bg-cyan-400/15 disabled:opacity-50"
-            >
-              {loading ? "Création..." : "Créer mon compte"}
-            </button>
-          </form>
-        )}
-
-        {message && <p className="mt-6 text-sm text-white/75">{message}</p>}
+            )}
+          </section>
+        </div>
       </div>
     </main>
   );
