@@ -10,6 +10,9 @@ type UserProfileRow = {
   subscription_plan: "free" | "premium";
   role: "user" | "expert" | "admin";
   created_at: string;
+  user_level: string | null;
+  user_location: string | null;
+  interests: string[] | null;
 };
 
 type IngestionRunRow = {
@@ -112,7 +115,9 @@ export default function AdminPage() {
     const [usersRes, runsRes, logsRes] = await Promise.all([
       supabase
         .from("profiles")
-        .select("id, email, subscription_plan, role, created_at")
+        .select(
+          "id, email, subscription_plan, role, created_at, user_level, user_location, interests"
+        )
         .order("created_at", { ascending: false })
         .limit(100),
       supabase
@@ -286,6 +291,33 @@ export default function AdminPage() {
                       )}
                     </div>
 
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {user.user_level && (
+                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75">
+                          Niveau : {user.user_level}
+                        </span>
+                      )}
+
+                      {user.user_location && (
+                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75">
+                          Lieu : {user.user_location}
+                        </span>
+                      )}
+                    </div>
+
+                    {user.interests && user.interests.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {user.interests.map((interest) => (
+                          <span
+                            key={interest}
+                            className="rounded-full border border-cyan-400/15 bg-cyan-400/10 px-3 py-1.5 text-xs text-cyan-100/90"
+                          >
+                            {interest}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
                       <div>
                         <label className="mb-2 block text-xs uppercase tracking-[0.2em] text-white/35">
@@ -324,10 +356,7 @@ export default function AdminPage() {
                           <option value="expert" className="bg-[#0b1220]">
                             expert
                           </option>
-                          <option
-                            value="admin"
-                            className="bg-[#0b1220]"
-                          >
+                          <option value="admin" className="bg-[#0b1220]">
                             admin
                           </option>
                         </select>
