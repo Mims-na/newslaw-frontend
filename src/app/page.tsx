@@ -349,7 +349,7 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-[#02040a] bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.10),_transparent_30%),radial-gradient(circle_at_20%_20%,_rgba(168,85,247,0.10),_transparent_25%),linear-gradient(to_bottom,_#030712,_#02040a)] px-6 py-8 text-white md:px-10 md:py-10">
       <div className="mx-auto max-w-7xl">
-        <header className="flex flex-col gap-8">
+        <header className="flex flex-col gap-10">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.45em] text-white/50">
@@ -397,18 +397,36 @@ export default function HomePage() {
             </div>
           </div>
 
-          <section className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr] lg:items-end">
+          <section className="grid gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
             <div>
-              <h1 className="max-w-5xl text-5xl font-semibold leading-[0.98] tracking-tight text-white md:text-7xl">
-                Actualité juridique, structurée et qualifiée.
+              <div className="inline-flex items-center rounded-full border border-cyan-400/15 bg-cyan-400/10 px-4 py-2 text-xs uppercase tracking-[0.28em] text-cyan-100/80">
+                Beta en cours
+              </div>
+
+              <h1 className="mt-6 max-w-5xl text-5xl font-semibold leading-[0.95] tracking-tight text-white md:text-7xl">
+                Actualité juridique,
+                <br className="hidden md:block" /> structurée et qualifiée.
               </h1>
 
-              <p className="mt-8 max-w-4xl text-xl leading-[1.8] text-white/72 md:text-2xl">
-                Décisions, avis, communiqués et sanctions enrichis avec matière principale, sous-thème, portée et apport pratique.
+              <p className="mt-8 max-w-4xl text-lg leading-[1.9] text-white/72 md:text-2xl">
+                Décisions, avis, communiqués et sanctions enrichis avec matière principale,
+                sous-thème, portée et apport pratique, pour aller plus vite à l’essentiel utile.
               </p>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
+                  3 dernières fiches complètes en gratuit
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
+                  Historique complet en premium
+                </div>
+                <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
+                  Sources officielles reliées
+                </div>
+              </div>
             </div>
 
-            <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
+            <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-sm shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
               <p className="text-sm uppercase tracking-[0.3em] text-white/40">
                 Terminal
               </p>
@@ -423,7 +441,9 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center justify-between border-b border-white/10 pb-3">
                   <span>Accès gratuit complet</span>
-                  <span className="text-white">{FREE_FULL_ACCESS_COUNT} dernières fiches</span>
+                  <span className="text-right text-white">
+                    {FREE_FULL_ACCESS_COUNT} dernières fiches
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Dernière mise à jour</span>
@@ -436,7 +456,21 @@ export default function HomePage() {
           </section>
         </header>
 
-        <section className="mt-12 rounded-[2rem] border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+        <section className="mt-12 rounded-[2rem] border border-white/10 bg-white/5 p-5 backdrop-blur-sm shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-[0.28em] text-white/35">
+              Recherche
+            </p>
+            {search.trim() && (
+              <button
+                onClick={() => setSearch("")}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65 transition hover:border-white/20 hover:bg-white/10"
+              >
+                Effacer
+              </button>
+            )}
+          </div>
+
           <input
             type="text"
             value={search}
@@ -447,9 +481,20 @@ export default function HomePage() {
         </section>
 
         <section className="mt-8">
-          <p className="mb-3 text-xs uppercase tracking-[0.28em] text-white/35">
-            Matière principale
-          </p>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-xs uppercase tracking-[0.28em] text-white/35">
+              Matière principale
+            </p>
+            {selectedMainFilter !== "Toutes" && (
+              <button
+                onClick={() => setSelectedMainFilter("Toutes")}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65 transition hover:border-white/20 hover:bg-white/10"
+              >
+                Réinitialiser
+              </button>
+            )}
+          </div>
+
           <div className="flex flex-wrap gap-3">
             {mainFilters.map((filter) => {
               const active = selectedMainFilter === filter;
@@ -459,7 +504,7 @@ export default function HomePage() {
                   onClick={() => setSelectedMainFilter(filter)}
                   className={`rounded-full border px-5 py-3 text-sm font-medium transition md:text-base ${
                     active
-                      ? "border-white bg-white text-black"
+                      ? "border-white bg-white text-black shadow-[0_6px_20px_rgba(255,255,255,0.08)]"
                       : "border-white/10 bg-white/5 text-white/80 hover:border-white/20 hover:bg-white/10"
                   }`}
                 >
@@ -470,12 +515,12 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="mt-6 rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+        <section className="mt-6 rounded-[1.75rem] border border-white/10 bg-white/5 p-4 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-medium text-white/85">Filtres avancés</p>
               <p className="mt-1 text-sm text-white/45">
-                Sous-thème et portée, pour affiner la recherche.
+                Sous-thème et portée, pour affiner la sélection.
               </p>
             </div>
 
@@ -577,9 +622,15 @@ export default function HomePage() {
             <p className="text-white/60">Chargement...</p>
           </section>
         ) : paginatedItems.length === 0 ? (
-          <section className="mt-12 rounded-[2rem] border border-white/10 bg-white/5 p-8">
-            <p className="text-white/70">
-              Aucun résultat pour cette recherche ou ce filtre.
+          <section className="mt-12 rounded-[2rem] border border-white/10 bg-white/5 p-10 text-center">
+            <p className="text-sm uppercase tracking-[0.3em] text-white/35">
+              Aucun résultat
+            </p>
+            <h2 className="mt-4 text-2xl font-semibold text-white md:text-3xl">
+              Aucun contenu ne correspond à cette recherche.
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/60 md:text-base">
+              Essaie un autre mot-clé ou réinitialise certains filtres pour élargir la sélection.
             </p>
           </section>
         ) : (
@@ -620,6 +671,12 @@ export default function HomePage() {
                     {item.importance === "important" && (
                       <span className="rounded-full border border-amber-400/25 bg-amber-400/10 px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-amber-200">
                         Important
+                      </span>
+                    )}
+
+                    {!hasFullAccess && (
+                      <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-[11px] font-medium uppercase tracking-wide text-amber-100">
+                        Aperçu gratuit
                       </span>
                     )}
                   </div>
@@ -678,7 +735,7 @@ export default function HomePage() {
                       )}
                     </div>
 
-                    <p className="mt-4 text-lg leading-[1.9] text-white/82 md:text-xl">
+                    <p className="mt-4 max-w-5xl text-lg leading-[1.9] text-white/82 md:text-xl">
                       {hasFullAccess
                         ? item.practical_impact || item.summary || "Aucun contenu disponible."
                         : getFreeExcerpt(item.practical_impact || item.summary, 220)}
@@ -703,7 +760,7 @@ export default function HomePage() {
                   </div>
 
                   <div className="mt-6 flex flex-wrap items-center gap-3">
-                    <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-white">
+                    <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-white transition group-hover:border-white/20 group-hover:bg-white/10">
                       {hasFullAccess ? "Lire la fiche complète" : "Voir l’aperçu"}
                     </span>
 
