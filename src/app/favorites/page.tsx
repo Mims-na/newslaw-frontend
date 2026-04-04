@@ -4,19 +4,21 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+type FavoriteNewsItem = {
+  id: string;
+  title: string;
+  summary: string | null;
+  source: string | null;
+  published_at: string | null;
+  category: string | null;
+  sub_category: string | null;
+  importance: string | null;
+};
+
 type FavoriteRow = {
-  id: number;
+  id: string;
   created_at: string;
-  news_items: {
-    id: string;
-    title: string;
-    summary: string | null;
-    source: string | null;
-    published_at: string | null;
-    category: string | null;
-    sub_category: string | null;
-    importance: string | null;
-  } | null;
+  news_items: FavoriteNewsItem[] | null;
 };
 
 function formatDate(value: string | null) {
@@ -50,11 +52,18 @@ export default function FavoritesPage() {
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("subscription_plan")
         .eq("id", session.user.id)
         .single();
+
+      if (profileError) {
+        console.error("Erreur profil :", profileError);
+        setAllowed(false);
+        setLoading(false);
+        return;
+      }
 
       if (profile?.subscription_plan !== "premium") {
         setAllowed(false);
@@ -87,9 +96,11 @@ export default function FavoritesPage() {
 
       if (error) {
         console.error("Erreur chargement favoris :", error);
+        setFavorites([]);
+      } else {
+        setFavorites((data ?? []) as FavoriteRow[]);
       }
 
-      setFavorites((data as FavoriteRow[]) || []);
       setLoading(false);
     }
 
@@ -156,7 +167,7 @@ export default function FavoritesPage() {
 
         <div className="mt-8 space-y-4">
           {favorites.map((favorite) => {
-            const item = favorite.news_items;
+            const item = favorite.news_items?.[0];
             if (!item) return null;
 
             return (
