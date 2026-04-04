@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import FavoriteButton from "@/components/favorite-button";
 
 type NewsItem = {
   id: string;
@@ -108,11 +109,7 @@ export default function NewsDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFoundState, setNotFoundState] = useState(false);
 
-  const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [freeAccessibleIds, setFreeAccessibleIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -150,7 +147,6 @@ export default function NewsDetailPage() {
       } = await supabase.auth.getSession();
 
       const currentUserId = session?.user?.id ?? null;
-      setUserId(currentUserId);
 
       if (currentUserId) {
         const { data: profileData } = await supabase
@@ -160,18 +156,8 @@ export default function NewsDetailPage() {
           .single();
 
         setProfile((profileData as UserProfile) || null);
-
-        const { data: favoriteData } = await supabase
-          .from("favorites")
-          .select("id")
-          .eq("user_id", currentUserId)
-          .eq("news_item_id", id)
-          .maybeSingle();
-
-        setIsFavorite(!!favoriteData);
       } else {
         setProfile(null);
-        setIsFavorite(false);
       }
 
       const { data: latestData } = await supabase
@@ -191,46 +177,6 @@ export default function NewsDetailPage() {
     if (!newsItem) return false;
     return isPremium || freeAccessibleIds.includes(newsItem.id);
   }, [isPremium, freeAccessibleIds, newsItem]);
-
-  async function toggleFavorite() {
-    if (!userId || !newsItem) {
-      alert("Connecte-toi pour utiliser les favoris.");
-      return;
-    }
-
-    if (!isPremium) {
-      alert("Les favoris sont réservés au premium.");
-      return;
-    }
-
-    setFavoriteLoading(true);
-
-    try {
-      if (isFavorite) {
-        const { error } = await supabase
-          .from("favorites")
-          .delete()
-          .eq("user_id", userId)
-          .eq("news_item_id", newsItem.id);
-
-        if (error) throw error;
-        setIsFavorite(false);
-      } else {
-        const { error } = await supabase.from("favorites").insert({
-          user_id: userId,
-          news_item_id: newsItem.id,
-        });
-
-        if (error) throw error;
-        setIsFavorite(true);
-      }
-    } catch (error) {
-      console.error("Erreur favoris :", error);
-      alert("Impossible de mettre à jour les favoris.");
-    } finally {
-      setFavoriteLoading(false);
-    }
-  }
 
   if (notFoundState) {
     notFound();
@@ -264,13 +210,7 @@ export default function NewsDetailPage() {
             ← Retour à l’accueil
           </Link>
 
-          <button
-            onClick={toggleFavorite}
-            disabled={favoriteLoading}
-            className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-white transition hover:border-white/20 hover:bg-white/10 disabled:opacity-50"
-          >
-            {isFavorite ? "★ Retirer des favoris" : "☆ Ajouter aux favoris"}
-          </button>
+          <FavoriteButton newsItemId={Number(newsItem.id)} />
         </div>
 
         <article className="mt-8 overflow-hidden rounded-[2rem] border border-white/10 bg-[#07101d]/85 p-8 shadow-[0_10px_40px_rgba(0,0,0,0.25)] backdrop-blur-sm md:p-10">
