@@ -18,7 +18,7 @@ type FavoriteNewsItem = {
 type FavoriteRow = {
   id: string;
   created_at: string;
-  news_items: FavoriteNewsItem[] | null;
+  news_items: FavoriteNewsItem | FavoriteNewsItem[] | null;
 };
 
 function formatDate(value: string | null) {
@@ -31,6 +31,14 @@ function formatDate(value: string | null) {
     month: "short",
     year: "numeric",
   });
+}
+
+function normalizeNewsItem(
+  value: FavoriteNewsItem | FavoriteNewsItem[] | null
+): FavoriteNewsItem | null {
+  if (!value) return null;
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value;
 }
 
 export default function FavoritesPage() {
@@ -98,6 +106,7 @@ export default function FavoritesPage() {
         console.error("Erreur chargement favoris :", error);
         setFavorites([]);
       } else {
+        console.log("FAVORITES RAW DATA :", data);
         setFavorites((data ?? []) as FavoriteRow[]);
       }
 
@@ -144,6 +153,13 @@ export default function FavoritesPage() {
     );
   }
 
+  const visibleFavorites = favorites
+    .map((favorite) => ({
+      ...favorite,
+      item: normalizeNewsItem(favorite.news_items),
+    }))
+    .filter((favorite) => favorite.item);
+
   return (
     <main className="min-h-screen bg-[#02040a] bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.10),_transparent_30%),linear-gradient(to_bottom,_#030712,_#02040a)] px-6 py-10 text-white md:px-10">
       <div className="mx-auto max-w-6xl">
@@ -166,10 +182,8 @@ export default function FavoritesPage() {
         </div>
 
         <div className="mt-8 space-y-4">
-          {favorites.map((favorite) => {
-            const item = favorite.news_items?.[0];
-            if (!item) return null;
-
+          {visibleFavorites.map((favorite) => {
+            const item = favorite.item!;
             return (
               <Link
                 key={favorite.id}
@@ -206,6 +220,14 @@ export default function FavoritesPage() {
               </Link>
             );
           })}
+
+          {favorites.length > 0 && visibleFavorites.length === 0 && (
+            <div className="rounded-[1.5rem] border border-rose-400/15 bg-rose-400/5 p-8">
+              <p className="text-white/75">
+                Des favoris existent, mais les fiches liées ne remontent pas correctement.
+              </p>
+            </div>
+          )}
 
           {favorites.length === 0 && (
             <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-8">
