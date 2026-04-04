@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type UserProfileRow = {
@@ -71,6 +71,11 @@ export default function AdminPage() {
   const [logs, setLogs] = useState<IngestionLogRow[]>([]);
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
 
+  const adminCount = useMemo(
+    () => users.filter((user) => user.role === "admin").length,
+    [users]
+  );
+
   async function loadAdminData() {
     setLoading(true);
 
@@ -92,7 +97,11 @@ export default function AdminPage() {
       .eq("id", session.user.id)
       .single();
 
-    if (profileError || !currentProfile || (currentProfile as CurrentProfile).role !== "admin") {
+    if (
+      profileError ||
+      !currentProfile ||
+      (currentProfile as CurrentProfile).role !== "admin"
+    ) {
       setIsAllowed(false);
       setLoading(false);
       return;
@@ -108,12 +117,16 @@ export default function AdminPage() {
         .limit(100),
       supabase
         .from("ingestion_runs")
-        .select("id, started_at, finished_at, status, app_env, total_sources, successful_sources, failed_sources")
+        .select(
+          "id, started_at, finished_at, status, app_env, total_sources, successful_sources, failed_sources"
+        )
         .order("id", { ascending: false })
         .limit(20),
       supabase
         .from("ingestion_logs")
-        .select("id, run_id, source_name, started_at, finished_at, status, inserted_count, rejected_count, error_message")
+        .select(
+          "id, run_id, source_name, started_at, finished_at, status, inserted_count, rejected_count, error_message"
+        )
         .order("id", { ascending: false })
         .limit(50),
     ]);
@@ -133,6 +146,27 @@ export default function AdminPage() {
     field: "subscription_plan" | "role",
     value: string
   ) {
+    const targetUser = users.find((user) => user.id === userId);
+    if (!targetUser) return;
+
+    const isSelf = userId === currentAdminId;
+
+    if (
+      field === "role" &&
+      targetUser.role === "admin" &&
+      value !== "admin"
+    ) {
+      if (adminCount <= 1) {
+        alert("Impossible de retirer le dernier administrateur.");
+        return;
+      }
+
+      if (isSelf) {
+        alert("Tu ne peux pas te retirer toi-même le rôle admin depuis cette interface.");
+        return;
+      }
+    }
+
     setSavingUserId(userId);
 
     const { error } = await supabase
@@ -146,7 +180,7 @@ export default function AdminPage() {
     } else {
       setUsers((prev) =>
         prev.map((user) =>
-          user.id === userId ? { ...user, [field]: value } as UserProfileRow : user
+          user.id === userId ? ({ ...user, [field]: value } as UserProfileRow) : user
         )
       );
     }
@@ -188,8 +222,12 @@ export default function AdminPage() {
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-white/40">Admin</p>
-            <h1 className="mt-3 text-4xl font-semibold md:text-5xl">Pilotage minimal</h1>
+            <p className="text-xs uppercase tracking-[0.35em] text-white/40">
+              Admin
+            </p>
+            <h1 className="mt-3 text-4xl font-semibold md:text-5xl">
+              Pilotage minimal
+            </h1>
           </div>
 
           <Link
@@ -214,10 +252,17 @@ export default function AdminPage() {
               </button>
             </div>
 
+            <p className="mt-3 text-xs text-white/45">
+              Admins actifs : {adminCount}
+            </p>
+
             <div className="mt-5 space-y-3">
               {users.map((user) => {
                 const isCurrentAdmin = user.id === currentAdminId;
                 const isSaving = savingUserId === user.id;
+                const disableAdminDemotion =
+                  user.role === "admin" &&
+                  (isCurrentAdmin || adminCount <= 1);
 
                 return (
                   <div
@@ -226,7 +271,9 @@ export default function AdminPage() {
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
-                        <p className="text-sm text-white">{user.email || "Email indisponible"}</p>
+                        <p className="text-sm text-white">
+                          {user.email || "Email indisponible"}
+                        </p>
                         <p className="mt-1 text-xs text-white/45">
                           Créé le {formatDateTime(user.created_at)}
                         </p>
@@ -252,8 +299,12 @@ export default function AdminPage() {
                           }
                           className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none"
                         >
-                          <option value="free" className="bg-[#0b1220]">free</option>
-                          <option value="premium" className="bg-[#0b1220]">premium</option>
+                          <option value="free" className="bg-[#0b1220]">
+                            free
+                          </option>
+                          <option value="premium" className="bg-[#0b1220]">
+                            premium
+                          </option>
                         </select>
                       </div>
 
@@ -267,18 +318,35 @@ export default function AdminPage() {
                           onChange={(e) => updateUser(user.id, "role", e.target.value)}
                           className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none"
                         >
-                          <option value="user" className="bg-[#0b1220]">user</option>
-                          <option value="expert" className="bg-[#0b1220]">expert</option>
-                          <option value="admin" className="bg-[#0b1220]">admin</option>
+                          <option value="user" className="bg-[#0b1220]">
+                            user
+                          </option>
+                          <option value="expert" className="bg-[#0b1220]">
+                            expert
+                          </option>
+                          <option
+                            value="admin"
+                            className="bg-[#0b1220]"
+                          >
+                            admin
+                          </option>
                         </select>
                       </div>
                     </div>
+
+                    {disableAdminDemotion && (
+                      <p className="mt-3 text-xs text-amber-200/80">
+                        Ce compte admin ne peut pas être rétrogradé depuis cette interface.
+                      </p>
+                    )}
                   </div>
                 );
               })}
 
               {users.length === 0 && (
-                <p className="text-sm text-white/55">Aucun utilisateur trouvé.</p>
+                <p className="text-sm text-white/55">
+                  Aucun utilisateur trouvé.
+                </p>
               )}
             </div>
           </div>
@@ -298,11 +366,16 @@ export default function AdminPage() {
                     <div>
                       <p className="text-sm text-white">Run #{run.id}</p>
                       <p className="mt-1 text-xs text-white/45">
-                        Début : {formatDateTime(run.started_at)} · Fin : {formatDateTime(run.finished_at)}
+                        Début : {formatDateTime(run.started_at)} · Fin :{" "}
+                        {formatDateTime(run.finished_at)}
                       </p>
                     </div>
 
-                    <span className={`rounded-full border px-3 py-1 text-xs ${getRunBadgeClass(run.status)}`}>
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs ${getRunBadgeClass(
+                        run.status
+                      )}`}
+                    >
                       {run.status}
                     </span>
                   </div>
@@ -340,11 +413,16 @@ export default function AdminPage() {
                       {log.source_name} · run #{log.run_id}
                     </p>
                     <p className="mt-1 text-xs text-white/45">
-                      Début : {formatDateTime(log.started_at)} · Fin : {formatDateTime(log.finished_at)}
+                      Début : {formatDateTime(log.started_at)} · Fin :{" "}
+                      {formatDateTime(log.finished_at)}
                     </p>
                   </div>
 
-                  <span className={`rounded-full border px-3 py-1 text-xs ${getRunBadgeClass(log.status)}`}>
+                  <span
+                    className={`rounded-full border px-3 py-1 text-xs ${getRunBadgeClass(
+                      log.status
+                    )}`}
+                  >
                     {log.status}
                   </span>
                 </div>
@@ -352,7 +430,11 @@ export default function AdminPage() {
                 <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/65">
                   <span>insérés: {log.inserted_count ?? "—"}</span>
                   <span>rejetés: {log.rejected_count ?? "—"}</span>
-                  {log.error_message && <span className="text-rose-200">erreur: {log.error_message}</span>}
+                  {log.error_message && (
+                    <span className="text-rose-200">
+                      erreur: {log.error_message}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
