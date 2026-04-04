@@ -4,23 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-function getURL() {
-  let url =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.NEXT_PUBLIC_VERCEL_URL ||
-    "http://localhost:3000";
-
-  if (!url.startsWith("http")) {
-    url = `https://${url}`;
-  }
-
-  if (!url.endsWith("/")) {
-    url = `${url}/`;
-  }
-
-  return url;
-}
-
 const INTEREST_OPTIONS = [
   "Droit public des affaires",
   "Régulation et numérique",
@@ -34,9 +17,17 @@ const INTEREST_OPTIONS = [
   "Énergie",
 ];
 
+const USER_LEVEL_OPTIONS = [
+  "M1",
+  "M2",
+  "Élève-avocat",
+  "Avocat",
+  "Juriste",
+  "Autre",
+];
+
 export default function LoginPage() {
   const [pageMode, setPageMode] = useState<"login" | "signup">("login");
-  const [loginMode, setLoginMode] = useState<"password" | "magic">("password");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,28 +47,6 @@ export default function LoginPage() {
         ? prev.filter((item) => item !== value)
         : [...prev, value]
     );
-  }
-
-  async function handleMagicLink(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setMessage(null);
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: getURL(),
-      },
-    });
-
-    if (error) {
-      console.error(error);
-      setMessage("Impossible d’envoyer le lien de connexion.");
-    } else {
-      setMessage("Lien envoyé. Vérifie ta boîte mail.");
-    }
-
-    setLoading(false);
   }
 
   async function handlePasswordLogin(e: React.FormEvent) {
@@ -109,7 +78,6 @@ export default function LoginPage() {
       email: signupEmail,
       password: signupPassword,
       options: {
-        emailRedirectTo: getURL(),
         data: {
           user_level: userLevel || null,
           user_location: userLocation || null,
@@ -130,9 +98,7 @@ export default function LoginPage() {
       return;
     }
 
-    setMessage(
-      "Compte créé. Vérifie ton email si une confirmation est demandée."
-    );
+    setMessage("Compte créé. Tu peux maintenant te connecter avec ton mot de passe.");
     setLoading(false);
   }
 
@@ -165,7 +131,7 @@ export default function LoginPage() {
             <p className="mt-8 max-w-xl text-lg leading-8 text-white/72 md:text-xl">
               {pageMode === "login"
                 ? "Connecte-toi pour accéder à la veille complète, gérer tes favoris et utiliser le produit de manière continue."
-                : "Crée ton compte pour rejoindre la beta, personnaliser ton profil et nous aider à mieux comprendre les usages du service."}
+                : "Crée un compte pour rejoindre la beta, personnaliser ton profil et nous aider à mieux comprendre les usages du service."}
             </p>
 
             <div className="mt-10 grid gap-4">
@@ -227,82 +193,43 @@ export default function LoginPage() {
             </div>
 
             {pageMode === "login" ? (
-              <>
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <button
-                    onClick={() => setLoginMode("password")}
-                    className={`rounded-full border px-4 py-2 text-sm transition ${
-                      loginMode === "password"
-                        ? "border-cyan-300 bg-cyan-100 text-black"
-                        : "border-cyan-400/15 bg-cyan-400/10 text-cyan-100/90 hover:border-cyan-400/30 hover:bg-cyan-400/15"
-                    }`}
-                  >
-                    Mot de passe
-                  </button>
-
-                  <button
-                    onClick={() => setLoginMode("magic")}
-                    className={`rounded-full border px-4 py-2 text-sm transition ${
-                      loginMode === "magic"
-                        ? "border-cyan-300 bg-cyan-100 text-black"
-                        : "border-cyan-400/15 bg-cyan-400/10 text-cyan-100/90 hover:border-cyan-400/30 hover:bg-cyan-400/15"
-                    }`}
-                  >
-                    Lien email
-                  </button>
+              <form onSubmit={handlePasswordLogin} className="mt-8 space-y-5">
+                <div>
+                  <label className="mb-2 block text-sm text-white/72">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.07]"
+                    placeholder="vous@exemple.com"
+                  />
                 </div>
 
-                <form
-                  onSubmit={
-                    loginMode === "password"
-                      ? handlePasswordLogin
-                      : handleMagicLink
-                  }
-                  className="mt-8 space-y-5"
+                <div>
+                  <label className="mb-2 block text-sm text-white/72">
+                    Mot de passe
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.07]"
+                    placeholder="Votre mot de passe"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-400/10 px-6 py-3 text-sm font-medium text-cyan-50 transition hover:border-cyan-400/30 hover:bg-cyan-400/15 disabled:opacity-50"
                 >
-                  <div>
-                    <label className="mb-2 block text-sm text-white/72">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.07]"
-                      placeholder="vous@exemple.com"
-                    />
-                  </div>
-
-                  {loginMode === "password" && (
-                    <div>
-                      <label className="mb-2 block text-sm text-white/72">
-                        Mot de passe
-                      </label>
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.07]"
-                        placeholder="Votre mot de passe"
-                      />
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="inline-flex items-center rounded-full border border-cyan-400/20 bg-cyan-400/10 px-6 py-3 text-sm font-medium text-cyan-50 transition hover:border-cyan-400/30 hover:bg-cyan-400/15 disabled:opacity-50"
-                  >
-                    {loading
-                      ? "Chargement..."
-                      : loginMode === "password"
-                      ? "Se connecter"
-                      : "Recevoir le lien"}
-                  </button>
-                </form>
-              </>
+                  {loading ? "Chargement..." : "Se connecter"}
+                </button>
+              </form>
             ) : (
               <form onSubmit={handleSignup} className="mt-8 space-y-5">
                 <div className="grid gap-5 md:grid-cols-2">
@@ -334,40 +261,33 @@ export default function LoginPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="mb-2 block text-sm text-white/72">
+                  <div className="md:col-span-2">
+                    <label className="mb-3 block text-sm text-white/72">
                       Niveau / statut
                     </label>
-                    <select
-                      value={userLevel}
-                      onChange={(e) => setUserLevel(e.target.value)}
-                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white outline-none transition focus:border-cyan-300/40 focus:bg-white/[0.07]"
-                    >
-                      <option value="" className="bg-[#0b1220]">
-                        Sélectionner
-                      </option>
-                      <option value="M1" className="bg-[#0b1220]">
-                        M1
-                      </option>
-                      <option value="M2" className="bg-[#0b1220]">
-                        M2
-                      </option>
-                      <option value="Élève-avocat" className="bg-[#0b1220]">
-                        Élève-avocat
-                      </option>
-                      <option value="Avocat" className="bg-[#0b1220]">
-                        Avocat
-                      </option>
-                      <option value="Juriste" className="bg-[#0b1220]">
-                        Juriste
-                      </option>
-                      <option value="Autre" className="bg-[#0b1220]">
-                        Autre
-                      </option>
-                    </select>
+                    <div className="flex flex-wrap gap-2.5">
+                      {USER_LEVEL_OPTIONS.map((level) => {
+                        const active = userLevel === level;
+
+                        return (
+                          <button
+                            key={level}
+                            type="button"
+                            onClick={() => setUserLevel(level)}
+                            className={`rounded-full border px-3.5 py-2 text-sm transition ${
+                              active
+                                ? "border-cyan-300 bg-cyan-100 text-black shadow-[0_0_0_1px_rgba(255,255,255,0.04)]"
+                                : "border-white/10 bg-white/5 text-white/82 hover:border-white/20 hover:bg-white/10"
+                            }`}
+                          >
+                            {level}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="mb-2 block text-sm text-white/72">
                       Lieu
                     </label>
