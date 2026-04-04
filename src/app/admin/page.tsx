@@ -13,6 +13,11 @@ type UserProfileRow = {
   user_level: string | null;
   user_location: string | null;
   interests: string[] | null;
+  last_login_at: string | null;
+  last_seen_at: string | null;
+  favorites_count: number;
+  last_view_at: string | null;
+  total_views: number;
 };
 
 type IngestionRunRow = {
@@ -52,6 +57,19 @@ function formatDateTime(value: string | null) {
     day: "numeric",
     month: "short",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatShortDateTime(value: string | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "short",
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -114,9 +132,9 @@ export default function AdminPage() {
 
     const [usersRes, runsRes, logsRes] = await Promise.all([
       supabase
-        .from("profiles")
+        .from("admin_user_stats")
         .select(
-          "id, email, subscription_plan, role, created_at, user_level, user_location, interests"
+          "id, email, subscription_plan, role, created_at, user_level, user_location, interests, last_login_at, last_seen_at, favorites_count, last_view_at, total_views"
         )
         .order("created_at", { ascending: false })
         .limit(100),
@@ -317,6 +335,28 @@ export default function AdminPage() {
                         ))}
                       </div>
                     )}
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75">
+                        Dernière connexion : {formatShortDateTime(user.last_login_at)}
+                      </span>
+
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75">
+                        Dernière activité : {formatShortDateTime(user.last_seen_at)}
+                      </span>
+
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/75">
+                        Dernière fiche vue : {formatShortDateTime(user.last_view_at)}
+                      </span>
+
+                      <span className="rounded-full border border-cyan-400/15 bg-cyan-400/10 px-3 py-1.5 text-xs text-cyan-100/90">
+                        Favoris : {user.favorites_count ?? 0}
+                      </span>
+
+                      <span className="rounded-full border border-cyan-400/15 bg-cyan-400/10 px-3 py-1.5 text-xs text-cyan-100/90">
+                        Vues : {user.total_views ?? 0}
+                      </span>
+                    </div>
 
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
                       <div>

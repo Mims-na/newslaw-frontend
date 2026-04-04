@@ -50,24 +50,44 @@ export default function LoginPage() {
   }
 
   async function handlePasswordLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setMessage(null);
+  e.preventDefault();
+  setLoading(true);
+  setMessage(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  const { error, data } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
-    if (error) {
-      console.error(error);
-      setMessage("Email ou mot de passe incorrect.");
-    } else {
-      window.location.href = "/";
-    }
-
+  if (error) {
+    console.error(error);
+    setMessage("Email ou mot de passe incorrect.");
     setLoading(false);
+    return;
   }
+
+  const userId = data.user?.id;
+
+  if (userId) {
+    const now = new Date().toISOString();
+
+    const { error: profileUpdateError } = await supabase
+      .from("profiles")
+      .update({
+        last_login_at: now,
+        last_seen_at: now,
+      })
+      .eq("id", userId);
+
+    if (profileUpdateError) {
+      console.error("Erreur mise à jour dernière connexion :", profileUpdateError);
+    }
+  }
+
+  window.location.href = "/";
+}
+
+
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
