@@ -8,7 +8,7 @@ type FavoriteRow = {
   id: number;
   created_at: string;
   news_items: {
-    id: number;
+    id: string;
     title: string;
     summary: string | null;
     source: string | null;

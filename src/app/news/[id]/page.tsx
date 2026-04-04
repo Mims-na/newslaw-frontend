@@ -210,7 +210,7 @@ export default function NewsDetailPage() {
             ← Retour à l’accueil
           </Link>
 
-          <FavoriteButton newsItemId={Number(newsItem.id)} />
+          <FavoriteButton newsItemId={newsItem.id} />
         </div>
 
         <article className="mt-8 overflow-hidden rounded-[2rem] border border-white/10 bg-[#07101d]/85 p-8 shadow-[0_10px_40px_rgba(0,0,0,0.25)] backdrop-blur-sm md:p-10">

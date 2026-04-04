@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type Props = {
-  newsItemId: number;
+  newsItemId: string;
   isPremiumOnly?: boolean;
 };
 
-export default function FavoriteButton({ newsItemId, isPremiumOnly = true }: Props) {
+export default function FavoriteButton({
+  newsItemId,
+  isPremiumOnly = true,
+}: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -31,19 +34,24 @@ export default function FavoriteButton({ newsItemId, isPremiumOnly = true }: Pro
 
       setIsLoggedIn(true);
 
-      const [{ data: profile }, { data: favorite }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("subscription_plan")
-          .eq("id", session.user.id)
-          .single(),
-        supabase
-          .from("favorites")
-          .select("id")
-          .eq("user_id", session.user.id)
-          .eq("news_item_id", newsItemId)
-          .maybeSingle(),
-      ]);
+      const [{ data: profile }, { data: favorite, error: favoriteError }] =
+        await Promise.all([
+          supabase
+            .from("profiles")
+            .select("subscription_plan")
+            .eq("id", session.user.id)
+            .single(),
+          supabase
+            .from("favorites")
+            .select("id")
+            .eq("user_id", session.user.id)
+            .eq("news_item_id", newsItemId)
+            .maybeSingle(),
+        ]);
+
+      if (favoriteError) {
+        console.error("Erreur lecture favori :", favoriteError);
+      }
 
       setIsPremium(profile?.subscription_plan === "premium");
       setIsFavorite(!!favorite);
@@ -72,24 +80,31 @@ export default function FavoriteButton({ newsItemId, isPremiumOnly = true }: Pro
 
     setSaving(true);
 
-    if (isFavorite) {
-      const { error } = await supabase
-        .from("favorites")
-        .delete()
-        .eq("user_id", session.user.id)
-        .eq("news_item_id", newsItemId);
+    try {
+      if (isFavorite) {
+        const { error } = await supabase
+          .from("favorites")
+          .delete()
+          .eq("user_id", session.user.id)
+          .eq("news_item_id", newsItemId);
 
-      if (!error) setIsFavorite(false);
-    } else {
-      const { error } = await supabase.from("favorites").insert({
-        user_id: session.user.id,
-        news_item_id: newsItemId,
-      });
+        if (error) throw error;
+        setIsFavorite(false);
+      } else {
+        const { error } = await supabase.from("favorites").insert({
+          user_id: session.user.id,
+          news_item_id: newsItemId,
+        });
 
-      if (!error) setIsFavorite(true);
+        if (error) throw error;
+        setIsFavorite(true);
+      }
+    } catch (error) {
+      console.error("Erreur mise à jour favori :", error);
+      alert("Impossible de mettre à jour les favoris.");
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
   }
 
   if (loading) {
