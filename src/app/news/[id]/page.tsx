@@ -29,43 +29,6 @@ type NewsItem = {
   tags: string[] | null;
 };
 
-
-useEffect(() => {
-  async function trackView() {
-    if (!newsItem?.id) return;
-
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    const userId = session?.user?.id;
-    if (!userId) return;
-
-    const now = new Date().toISOString();
-
-    const [{ error: insertError }, { error: seenError }] = await Promise.all([
-      supabase.from("news_item_views").insert({
-        user_id: userId,
-        news_item_id: newsItem.id,
-      }),
-      supabase
-        .from("profiles")
-        .update({ last_seen_at: now })
-        .eq("id", userId),
-    ]);
-
-    if (insertError) {
-      console.error("Erreur tracking vue fiche :", insertError);
-    }
-
-    if (seenError) {
-      console.error("Erreur mise à jour last_seen_at :", seenError);
-    }
-  }
-
-  trackView();
-}, [newsItem?.id]);
-
 type UserProfile = {
   subscription_plan: "free" | "premium";
   role: "user" | "expert" | "admin";
@@ -145,7 +108,6 @@ export default function NewsDetailPage() {
   const [newsItem, setNewsItem] = useState<NewsItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFoundState, setNotFoundState] = useState(false);
-
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [freeAccessibleIds, setFreeAccessibleIds] = useState<string[]>([]);
 
@@ -208,6 +170,42 @@ export default function NewsDetailPage() {
 
     fetchAccessContext();
   }, [id]);
+
+  useEffect(() => {
+    async function trackView() {
+      if (!newsItem?.id) return;
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      const now = new Date().toISOString();
+
+      const [{ error: insertError }, { error: seenError }] = await Promise.all([
+        supabase.from("news_item_views").insert({
+          user_id: userId,
+          news_item_id: newsItem.id,
+        }),
+        supabase
+          .from("profiles")
+          .update({ last_seen_at: now })
+          .eq("id", userId),
+      ]);
+
+      if (insertError) {
+        console.error("Erreur tracking vue fiche :", insertError);
+      }
+
+      if (seenError) {
+        console.error("Erreur mise à jour last_seen_at :", seenError);
+      }
+    }
+
+    trackView();
+  }, [newsItem?.id]);
 
   const isPremium = profile?.subscription_plan === "premium";
   const hasFullAccess = useMemo(() => {
